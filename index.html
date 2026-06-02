@@ -196,7 +196,7 @@
         <div class="age-section">
             <div class="age-row">
                 <span>Ik ben</span>
-                <input type="number" id="age-input" min="5" max="99" placeholder="..." aria-label="Leeftijd">
+                <input type="number" id="age-input" min="6" max="99" placeholder="..." aria-label="Leeftijd">
                 <span>jaar</span>
             </div>
             <p class="age-hint" id="age-hint">Vul je leeftijd in voor verhalen op maat</p>
@@ -410,7 +410,11 @@
 
     function getAge() {
         const v = parseInt(ageInput.value);
-        return (v >= 5 && v <= 99) ? v : null;
+        return (v >= 6 && v <= 99) ? v : null;
+    }
+    function isTooYoung() {
+        const v = parseInt(ageInput.value);
+        return v >= 1 && v < 6;
     }
     function getTier(age) {
         if (!age) return 'middle';
@@ -436,7 +440,10 @@
 
     function updateAgeHint() {
         const age = getAge();
-        if (!age) {
+        if (isTooYoung()) {
+            ageHint.textContent = 'De VerhaalMachine is voor schrijvers vanaf 6 jaar';
+            ageHint.classList.add('active');
+        } else if (!age) {
             ageHint.textContent = 'Vul je leeftijd in voor verhalen op maat';
             ageHint.classList.remove('active');
         } else {
