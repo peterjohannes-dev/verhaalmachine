@@ -283,12 +283,24 @@
         });
     }
 
-    async function fetchTab(name) {
+    async function fetchTab(name, attempt = 1) {
         const { gid } = SHEET_TABS[name];
-        const url = `${SHEET_BASE}?gid=${gid}&single=true&output=csv`;
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error(`Fout bij laden van ${name}`);
-        return parseCSV(await resp.text());
+        const url = `${SHEET_BASE}?gid=${gid}&single=true&output=csv&_t=${Date.now()}`;
+        try {
+            const resp = await fetch(url, { redirect: 'follow' });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const text = await resp.text();
+            if (!text.includes('text,') && !text.startsWith('text,')) {
+                throw new Error('Geen geldige CSV ontvangen');
+            }
+            return parseCSV(text);
+        } catch (e) {
+            if (attempt < 3) {
+                await new Promise(r => setTimeout(r, 1000 * attempt));
+                return fetchTab(name, attempt + 1);
+            }
+            throw e;
+        }
     }
 
     const data = {
@@ -337,15 +349,21 @@
 
     async function loadAllData() {
         const overlay = document.getElementById('loading-overlay');
-        try {
-            const results = await Promise.all(
-                Object.keys(SHEET_TABS).map(name => fetchTab(name).then(items => ({ name, items })))
-            );
-            results.forEach(({ name, items }) => { data[name] = items; });
-            dataLoaded = true;
-        } catch (e) {
-            console.warn('Google Sheets laden mislukt, fallback actief:', e);
-        }
+        const names = Object.keys(SHEET_TABS);
+        const results = await Promise.allSettled(
+            names.map(name => fetchTab(name).then(items => ({ name, items })))
+        );
+        let loaded = 0;
+        results.forEach((result, i) => {
+            if (result.status === 'fulfilled') {
+                data[result.value.name] = result.value.items;
+                loaded++;
+            } else {
+                console.warn(`${names[i]} laden mislukt:`, result.reason);
+            }
+        });
+        dataLoaded = loaded > 0;
+        console.log(`VerhaalMachine: ${loaded}/${names.length} tabbladen geladen`);
         overlay.classList.add('hidden');
         setTimeout(() => overlay.remove(), 500);
         updateItemCount();
