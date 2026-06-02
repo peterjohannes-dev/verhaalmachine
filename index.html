@@ -261,8 +261,8 @@
     };
 
     function parseCSV(csv) {
-        const lines = csv.trim().split('\n');
-        const headers = lines[0].split(',');
+        const lines = csv.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim());
         return lines.slice(1).filter(l => l.trim()).map(line => {
             const vals = [];
             let current = '', inQuotes = false;
@@ -353,23 +353,37 @@
 
     async function loadAllData() {
         const overlay = document.getElementById('loading-overlay');
+        const loadingText = overlay.querySelector('.loading-text');
         const names = Object.keys(SHEET_TABS);
-        const results = await Promise.allSettled(
-            names.map(name => fetchTab(name).then(items => ({ name, items })))
-        );
-        let loaded = 0;
-        results.forEach((result, i) => {
-            if (result.status === 'fulfilled') {
-                data[result.value.name] = result.value.items;
-                loaded++;
+        try {
+            const results = await Promise.allSettled(
+                names.map(name => fetchTab(name).then(items => ({ name, items })))
+            );
+            let loaded = 0;
+            results.forEach((result, i) => {
+                if (result.status === 'fulfilled') {
+                    data[result.value.name] = result.value.items;
+                    loaded++;
+                } else {
+                    console.warn(`${names[i]} laden mislukt:`, result.reason);
+                }
+            });
+            dataLoaded = loaded > 0;
+            if (!dataLoaded) {
+                loadingText.textContent = 'Woordenlijsten konden niet geladen worden. Controleer je internetverbinding en herlaad de pagina.';
+                loadingText.style.color = '#e94560';
+                setTimeout(() => { overlay.classList.add('hidden'); }, 4000);
             } else {
-                console.warn(`${names[i]} laden mislukt:`, result.reason);
+                overlay.classList.add('hidden');
             }
-        });
-        dataLoaded = loaded > 0;
-        console.log(`VerhaalMachine: ${loaded}/${names.length} tabbladen geladen`);
-        overlay.classList.add('hidden');
-        setTimeout(() => overlay.remove(), 500);
+            console.log(`VerhaalMachine: ${loaded}/${names.length} tabbladen geladen`);
+        } catch (e) {
+            console.error('Laden volledig mislukt:', e);
+            loadingText.textContent = 'Er ging iets mis bij het laden. Herlaad de pagina.';
+            loadingText.style.color = '#e94560';
+            setTimeout(() => { overlay.classList.add('hidden'); }, 4000);
+        }
+        setTimeout(() => overlay.remove(), 5000);
         updateItemCount();
     }
 
