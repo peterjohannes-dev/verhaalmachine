@@ -285,18 +285,22 @@
 
     async function fetchTab(name, attempt = 1) {
         const { gid } = SHEET_TABS[name];
-        const url = `${SHEET_BASE}?gid=${gid}&single=true&output=csv&_t=${Date.now()}`;
+        const url = `${SHEET_BASE}?gid=${gid}&single=true&output=csv`;
         try {
-            const resp = await fetch(url, { redirect: 'follow' });
+            const resp = await fetch(url);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const text = await resp.text();
-            if (!text.includes('text,') && !text.startsWith('text,')) {
-                throw new Error('Geen geldige CSV ontvangen');
+            const firstLine = text.trim().split('\n')[0];
+            if (!firstLine.startsWith('text,')) {
+                console.warn(`${name}: onverwachte response (eerste regel: "${firstLine.substring(0, 80)}")`);
+                throw new Error('Geen geldige CSV');
             }
-            return parseCSV(text);
+            const items = parseCSV(text);
+            console.log(`${name}: ${items.length} items geladen`);
+            return items;
         } catch (e) {
             if (attempt < 3) {
-                await new Promise(r => setTimeout(r, 1000 * attempt));
+                await new Promise(r => setTimeout(r, 1500 * attempt));
                 return fetchTab(name, attempt + 1);
             }
             throw e;
@@ -441,12 +445,15 @@
     function updateAgeHint() {
         const age = getAge();
         if (isTooYoung()) {
-            ageHint.textContent = 'De VerhaalMachine is voor schrijvers vanaf 6 jaar';
+            ageHint.textContent = 'De laagste leeftijd is 6 jaar';
             ageHint.classList.add('active');
+            spinBtn.disabled = true;
         } else if (!age) {
+            spinBtn.disabled = false;
             ageHint.textContent = 'Vul je leeftijd in voor verhalen op maat';
             ageHint.classList.remove('active');
         } else {
+            spinBtn.disabled = false;
             const msgs = { young: 'Super! De VerhaalMachine kiest verhalen speciaal voor jou!', middle: 'Top! Klaar voor spannende verhalen!', older: 'Welkom, schrijver! De machine staat klaar.' };
             ageHint.textContent = msgs[getTier(age)];
             ageHint.classList.add('active');
@@ -525,6 +532,7 @@
 
     async function spin() {
         if (isSpinning) return;
+        if (isTooYoung()) return;
         if (locked.every(Boolean) && hasSpun) return;
         isSpinning = true;
         spinBtn.disabled = true;
