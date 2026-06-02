@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>De VerhaalMachine — Personage, Plek & Probleem</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --color-bg-start: #1a1a2e;
+            --color-bg-end: #16213e;
+            --color-machine: #0f1628;
+            --color-machine-border: #c9a84c;
+            --color-reel-bg: #faf8f5;
+            --color-text-light: #f0e6d3;
+            --color-text-dark: #1a1a2e;
+            --color-personage: #e94560;
+            --color-plek: #53d8a1;
+            --color-probleem: #f5a623;
+            --color-spin-start: #e94560;
+            --color-spin-end: #ff6b8a;
+            --color-story-btn: #53d8a1;
+            --color-locked: #c9a84c;
+            --font-display: 'Fredoka', sans-serif;
+            --font-story: 'Merriweather', Georgia, serif;
+        }
+
+        body {
+            font-family: var(--font-display);
+            background: linear-gradient(135deg, var(--color-bg-start), var(--color-bg-end));
+            color: var(--color-text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            overflow-x: hidden;
+        }
+
+        .container { width: 100%; max-width: 900px; display: flex; flex-direction: column; align-items: center; }
+        header { text-align: center; padding: 2rem 1rem 0.5rem; }
+
+        h1 {
+            font-size: clamp(2rem, 6vw, 3.2rem);
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--color-personage), var(--color-plek), var(--color-probleem));
+            -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px; line-height: 1.2;
+        }
+
+        .subtitle { font-size: clamp(0.9rem, 2.5vw, 1.15rem); color: #a0a0b8; margin-top: 0.5rem; font-weight: 400; }
+
+        .ppp-label { display: flex; justify-content: center; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; }
+        .ppp-label span { font-size: 0.85rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 20px; letter-spacing: 0.5px; }
+        .ppp-label .p1 { background: rgba(233,69,96,0.2); color: var(--color-personage); }
+        .ppp-label .p2 { background: rgba(83,216,161,0.2); color: var(--color-plek); }
+        .ppp-label .p3 { background: rgba(245,166,35,0.2); color: var(--color-probleem); }
+
+        .age-section { margin-top: 1.25rem; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; width: 100%; max-width: 420px; }
+        .age-row { display: flex; align-items: center; gap: 0.6rem; font-size: 1.1rem; font-weight: 500; color: var(--color-text-light); }
+        .age-row input {
+            width: 64px; text-align: center; font-family: var(--font-display); font-size: 1.15rem; font-weight: 600;
+            padding: 0.4rem 0.3rem; border: 2px solid rgba(255,255,255,0.2); border-radius: 12px;
+            background: rgba(255,255,255,0.07); color: var(--color-text-light); outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s; -moz-appearance: textfield;
+        }
+        .age-row input::-webkit-inner-spin-button, .age-row input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .age-row input:focus { border-color: var(--color-plek); box-shadow: 0 0 10px rgba(83,216,161,0.25); }
+        .age-hint { font-size: 0.8rem; color: #8888a0; text-align: center; min-height: 1.2em; transition: opacity 0.3s; }
+        .age-hint.active { color: var(--color-plek); }
+
+        .machine {
+            background: var(--color-machine); border: 2px solid var(--color-machine-border); border-radius: 24px;
+            padding: 2rem 1.5rem; margin-top: 1rem; width: 100%;
+            box-shadow: 0 0 40px rgba(201,168,76,0.15), inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+
+        .reels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .reel { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
+        .reel-header { font-size: 1rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; padding: 0.3rem 0.8rem; border-radius: 8px; }
+        .reel:nth-child(1) .reel-header { color: var(--color-personage); background: rgba(233,69,96,0.15); }
+        .reel:nth-child(2) .reel-header { color: var(--color-plek); background: rgba(83,216,161,0.15); }
+        .reel:nth-child(3) .reel-header { color: var(--color-probleem); background: rgba(245,166,35,0.15); }
+
+        .reel-window {
+            width: 100%; height: 120px; background: var(--color-reel-bg); border-radius: 16px;
+            display: flex; align-items: center; justify-content: center; padding: 1rem;
+            position: relative; overflow: hidden; border: 3px solid #2a2a3e;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .reel-window::before, .reel-window::after { content: ''; position: absolute; left: 0; right: 0; height: 25px; z-index: 2; pointer-events: none; }
+        .reel-window::before { top: 0; background: linear-gradient(to bottom, var(--color-reel-bg), transparent); }
+        .reel-window::after { bottom: 0; background: linear-gradient(to top, var(--color-reel-bg), transparent); }
+        .reel.spinning .reel-window { border-color: #5a5a7e; box-shadow: 0 0 20px rgba(100,100,180,0.3); }
+        .reel.locked .reel-window { border-color: var(--color-locked); box-shadow: 0 0 15px rgba(201,168,76,0.25); }
+
+        .reel-value {
+            font-size: clamp(0.95rem, 2.2vw, 1.15rem); font-weight: 500; color: var(--color-text-dark);
+            text-align: center; line-height: 1.4; transition: transform 0.15s ease-out, opacity 0.15s ease-out; z-index: 1;
+        }
+        .reel-value.initial { font-size: 2.5rem; color: #c0c0c0; }
+        .reel.spinning .reel-value { filter: blur(0.5px); animation: slotPulse 0.12s ease-in-out infinite alternate; }
+
+        @keyframes slotPulse { from { transform: translateY(-3px); opacity: 0.6; } to { transform: translateY(3px); opacity: 0.9; } }
+        .reel-value.landed { animation: landBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); filter: none; }
+        @keyframes landBounce { 0% { transform: scale(0.9) translateY(5px); opacity: 0.7; } 50% { transform: scale(1.08) translateY(-2px); opacity: 1; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
+
+        .lock-btn {
+            display: flex; align-items: center; gap: 0.4rem;
+            background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.15);
+            color: #8888a0; font-family: var(--font-display); font-size: 0.8rem; font-weight: 500;
+            padding: 0.4rem 0.9rem; border-radius: 20px; cursor: pointer; transition: all 0.25s; user-select: none;
+        }
+        .lock-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.25); color: #b0b0c8; }
+        .lock-btn.active { background: rgba(201,168,76,0.15); border-color: var(--color-locked); color: var(--color-locked); }
+        .lock-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .lock-icon { font-size: 0.9rem; line-height: 1; }
+
+        .controls { display: flex; justify-content: center; margin-top: 2rem; }
+        .spin-btn {
+            font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: white;
+            background: linear-gradient(135deg, var(--color-spin-start), var(--color-spin-end));
+            border: none; border-radius: 50px; padding: 1rem 3.5rem; cursor: pointer;
+            letter-spacing: 2px; text-transform: uppercase; transition: all 0.25s;
+            box-shadow: 0 4px 20px rgba(233,69,96,0.4); position: relative; overflow: hidden;
+        }
+        .spin-btn::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, transparent, rgba(255,255,255,0.15), transparent); transform: translateX(-100%); transition: transform 0.5s; }
+        .spin-btn:hover:not(:disabled)::after { transform: translateX(100%); }
+        .spin-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(233,69,96,0.5); }
+        .spin-btn:active:not(:disabled) { transform: translateY(0); box-shadow: 0 2px 10px rgba(233,69,96,0.3); }
+        .spin-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .hint-section { margin-top: 2rem; display: flex; flex-direction: column; align-items: center; gap: 1.25rem; }
+        .hint-btn {
+            font-family: var(--font-display); font-size: 1rem; font-weight: 600; color: var(--color-text-dark);
+            background: linear-gradient(135deg, var(--color-story-btn), #7de8c0);
+            border: none; border-radius: 50px; padding: 0.8rem 2rem; cursor: pointer;
+            box-shadow: 0 3px 15px rgba(83,216,161,0.3);
+            opacity: 0; transform: translateY(10px); pointer-events: none; transition: all 0.4s ease;
+        }
+        .hint-btn.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        .hint-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(83,216,161,0.4); }
+
+        .hint-output { width: 100%; background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 1.5rem; display: none; }
+        .hint-output.visible { display: block; animation: fadeSlideIn 0.5s ease; }
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .hint-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #8888a0; margin-bottom: 0.75rem; }
+        .hint-text { font-family: var(--font-story); font-size: 1.1rem; line-height: 1.85; color: #d0d0e0; font-style: italic; }
+
+        .item-count { text-align: center; font-size: 0.75rem; color: #5a5a70; margin-top: 0.75rem; }
+        footer { margin-top: 2.5rem; padding: 1.5rem; text-align: center; color: #5a5a70; font-size: 0.8rem; }
+
+        @media (prefers-reduced-motion: reduce) { .reel.spinning .reel-value { animation: none; filter: none; } .reel-value.landed { animation: none; } }
+        @media (max-width: 600px) { .machine { padding: 1.25rem 1rem; border-radius: 18px; } .reels { grid-template-columns: 1fr; gap: 1.25rem; } .reel-window { height: 90px; } .spin-btn { font-size: 1.25rem; padding: 0.85rem 2.5rem; } .controls { margin-top: 1.5rem; } }
+        @media (min-width: 601px) and (max-width: 780px) { .reel-value { font-size: 0.9rem; } .reel-window { height: 100px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>De VerhaalMachine</h1>
+            <p class="subtitle">Draai aan de wielen van je verbeelding</p>
+            <div class="ppp-label">
+                <span class="p1">Personage</span>
+                <span class="p2">Plek</span>
+                <span class="p3">Probleem</span>
+            </div>
+        </header>
+        <div class="age-section">
+            <div class="age-row">
+                <span>Ik ben</span>
+                <input type="number" id="age-input" min="5" max="99" placeholder="..." aria-label="Leeftijd">
+                <span>jaar</span>
+            </div>
+            <p class="age-hint" id="age-hint">Vul je leeftijd in voor verhalen op maat</p>
+        </div>
+        <div class="machine">
+            <div class="reels">
+                <div class="reel" id="reel-0">
+                    <div class="reel-header">Personage</div>
+                    <div class="reel-window"><div class="reel-value initial">?</div></div>
+                    <button class="lock-btn" data-reel="0" disabled><span class="lock-icon">&#x1F513;</span><span class="lock-text">Vastzetten</span></button>
+                </div>
+                <div class="reel" id="reel-1">
+                    <div class="reel-header">Plek</div>
+                    <div class="reel-window"><div class="reel-value initial">?</div></div>
+                    <button class="lock-btn" data-reel="1" disabled><span class="lock-icon">&#x1F513;</span><span class="lock-text">Vastzetten</span></button>
+                </div>
+                <div class="reel" id="reel-2">
+                    <div class="reel-header">Probleem</div>
+                    <div class="reel-window"><div class="reel-value initial">?</div></div>
+                    <button class="lock-btn" data-reel="2" disabled><span class="lock-icon">&#x1F513;</span><span class="lock-text">Vastzetten</span></button>
+                </div>
+            </div>
+            <p class="item-count" id="item-count"></p>
+            <div class="controls"><button class="spin-btn" id="spin-btn">Draai!</button></div>
+            <div class="hint-section">
+                <button class="hint-btn" id="hint-btn">Geef me een hulpvraag</button>
+                <div class="hint-output" id="hint-output">
+                    <div class="hint-label">Denkvraag</div>
+                    <div class="hint-text" id="hint-text"></div>
+                </div>
+            </div>
+        </div>
+        <footer><p>De VerhaalMachine &mdash; Combineer Personage, Plek &amp; Probleem en laat je inspireren.</p></footer>
+    </div>
+
+<script>
+(function () {
+    'use strict';
+
+    // ════════════════════════════════════════════════════════════════
+    //  PERSONAGES — 300 items
+    // ════════════════════════════════════════════════════════════════
+
+    const personages = [
+        // ── Dieren ──
+        { text: 'een nieuwsgierige kat', short: 'de kat', minAge: 6 },
+        { text: 'een slimme straathond', short: 'de straathond', minAge: 6 },
+        { text: 'een sprekende vis', short: 'de vis', minAge: 6 },
+        { text: 'een wijze schildpad', short: 'de schildpad', minAge: 6 },
+        { text: 'een dansende pinguïn', short: 'de pinguïn', minAge: 6 },
+        { text: 'een pratende papegaai', short: 'de papegaai', minAge: 6 },
+        { text: 'een dappere muis', short: 'de muis', minAge: 6 },
+        { text: 'een slaperige beer', short: 'de beer', minAge: 6 },
+        { text: 'een snelle haas', short: 'de haas', minAge: 6 },
+        { text: 'een verdrietige walvis', short: 'de walvis', minAge: 6 },
+        { text: 'een stoere leeuw', short: 'de leeuw', minAge: 6 },
+        { text: 'een schuwe wolf', short: 'de wolf', minAge: 6 },
+        { text: 'een grappige aap', short: 'de aap', minAge: 6 },
+        { text: 'een eigenwijs schaap', short: 'het schaap', minAge: 6 },
+        { text: 'een verlegen flamingo', short: 'de flamingo', minAge: 6 },
+        { text: 'een dromerige vlinder', short: 'de vlinder', minAge: 6 },
+        { text: 'een brutale kraai', short: 'de kraai', minAge: 6 },
+        { text: 'een hongerige vos', short: 'de vos', minAge: 6 },
+        { text: 'een blije dolfijn', short: 'de dolfijn', minAge: 6 },
+        { text: 'een eenzame uil', short: 'de uil', minAge: 6 },
+        { text: 'een giechelige hyena', short: 'de hyena', minAge: 8 },
+        { text: 'een gekke kip', short: 'de kip', minAge: 6 },
+        { text: 'een grote spin met een klein hartje', short: 'de spin', minAge: 6 },
+        { text: 'een hond die kan lezen', short: 'de hond', minAge: 6 },
+        { text: 'een hamster met grote plannen', short: 'de hamster', minAge: 6 },
+        { text: 'een schildpad die wil racen', short: 'de schildpad', minAge: 6 },
+        { text: 'een olifant die alles vergeet', short: 'de olifant', minAge: 6 },
+        { text: 'een zeehond op het droge', short: 'de zeehond', minAge: 6 },
+        { text: 'een paard dat kan vliegen', short: 'het paard', minAge: 6 },
+        { text: 'een konijn met een geheim', short: 'het konijn', minAge: 6 },
+        { text: 'een slang met een hoed', short: 'de slang', minAge: 6 },
+        { text: 'een bij die niet kan zoemen', short: 'de bij', minAge: 6 },
+        { text: 'een mier die reusachtig wil zijn', short: 'de mier', minAge: 6 },
+        { text: 'een goudvis buiten de kom', short: 'de goudvis', minAge: 6 },
+        { text: 'een krokodil die vegetariër is', short: 'de krokodil', minAge: 8 },
+        { text: 'een luie luiaard die haast heeft', short: 'de luiaard', minAge: 6 },
+        { text: 'een ijsbeer in de tropen', short: 'de ijsbeer', minAge: 6 },
+        { text: 'een naaktslak die de snelste wil zijn', short: 'de naaktslak', minAge: 6 },
+        { text: 'een kameleon die niet kan verkleuren', short: 'de kameleon', minAge: 6 },
+        { text: 'een egel met zachte stekels', short: 'de egel', minAge: 6 },
+        // ── Fantasiewezens ──
+        { text: 'een vriendelijke draak', short: 'de draak', minAge: 6 },
+        { text: 'een boze fee', short: 'de fee', minAge: 6 },
+        { text: 'een zingende zeemeermin', short: 'de zeemeermin', minAge: 6 },
+        { text: 'een pratende teddybeer', short: 'de teddybeer', minAge: 6 },
+        { text: 'een vliegende eenhoorn', short: 'de eenhoorn', minAge: 6 },
+        { text: 'een vergeetachtige tovenaar', short: 'de tovenaar', minAge: 6 },
+        { text: 'een verdwaalde elf', short: 'de elf', minAge: 6 },
+        { text: 'een schuchtere reus', short: 'de reus', minAge: 6 },
+        { text: 'een kabouter met hoogtevrees', short: 'de kabouter', minAge: 6 },
+        { text: 'een eenhoorn zonder hoorn', short: 'de eenhoorn', minAge: 6 },
+        { text: 'een trol onder de brug', short: 'de trol', minAge: 6 },
+        { text: 'een zeemonster met heimwee', short: 'het zeemonster', minAge: 8 },
+        { text: 'een vuurdraak die bang is voor vuur', short: 'de vuurdraak', minAge: 6 },
+        { text: 'een fee zonder toverstaaf', short: 'de fee', minAge: 6 },
+        { text: 'een golem van klei', short: 'de golem', minAge: 10 },
+        { text: 'een heks die niet kan toveren', short: 'de heks', minAge: 6 },
+        { text: 'een spook dat bang is in het donker', short: 'het spook', minAge: 6 },
+        { text: 'een griffioen met hoogtevrees', short: 'de griffioen', minAge: 8 },
+        { text: 'een feniks die niet wil herrijzen', short: 'de feniks', minAge: 10 },
+        { text: 'een draak die gedichten schrijft', short: 'de draak', minAge: 6 },
+        { text: 'een watergeest zonder rivier', short: 'de watergeest', minAge: 8 },
+        { text: 'een elfje met gebroken vleugels', short: 'het elfje', minAge: 6 },
+        { text: 'een tovernaarsleerling', short: 'de leerling', minAge: 6 },
+        { text: 'een betoverde kikker', short: 'de kikker', minAge: 6 },
+        { text: 'een reus met een teddybeer', short: 'de reus', minAge: 6 },
+        { text: 'een dwerg met een groot hart', short: 'de dwerg', minAge: 6 },
+        { text: 'een nimf van het bos', short: 'de nimf', minAge: 10 },
+        { text: 'een schaduwwezen zonder schaduw', short: 'het schaduwwezen', minAge: 10 },
+        { text: 'een pratende spiegel', short: 'de spiegel', minAge: 8 },
+        { text: 'een magische kat met drie staarten', short: 'de kat', minAge: 6 },
+        // ── Beroepen ──
+        { text: 'een onhandige detective', short: 'de detective', minAge: 6 },
+        { text: 'een dromerige bakker', short: 'de bakker', minAge: 6 },
+        { text: 'een beroemde kok', short: 'de kok', minAge: 6 },
+        { text: 'een vrolijke postbode', short: 'de postbode', minAge: 6 },
+        { text: 'een stoere ballerina', short: 'de ballerina', minAge: 6 },
+        { text: 'een jonge uitvinder', short: 'de uitvinder', minAge: 6 },
+        { text: 'een eenzame vuurtorenwachter', short: 'de vuurtorenwachter', minAge: 10 },
+        { text: 'een eigenzinnige wetenschapper', short: 'de wetenschapper', minAge: 10 },
+        { text: 'een stille spion', short: 'de spion', minAge: 10 },
+        { text: 'een zenuwachtige piloot', short: 'de piloot', minAge: 6 },
+        { text: 'een vergeetachtige bibliothecaris', short: 'de bibliothecaris', minAge: 6 },
+        { text: 'een dappere brandweerman', short: 'de brandweerman', minAge: 6 },
+        { text: 'een strenge maar eerlijke rechter', short: 'de rechter', minAge: 10 },
+        { text: 'een circusartiest zonder circus', short: 'de circusartiest', minAge: 8 },
+        { text: 'een schilder die kleurenblind is', short: 'de schilder', minAge: 8 },
+        { text: 'een componist die doof is geworden', short: 'de componist', minAge: 10 },
+        { text: 'een journalist op zoek naar de waarheid', short: 'de journalist', minAge: 10 },
+        { text: 'een dokter in een wereld zonder medicijnen', short: 'de dokter', minAge: 8 },
+        { text: 'een buschauffeur op de verkeerde route', short: 'de buschauffeur', minAge: 6 },
+        { text: 'een goochelaar wiens trucs echt werken', short: 'de goochelaar', minAge: 6 },
+        { text: 'een tuinman in een betonnen stad', short: 'de tuinman', minAge: 8 },
+        { text: 'een dierenarts voor magische dieren', short: 'de dierenarts', minAge: 6 },
+        { text: 'een straatmuzikant met een betoverd instrument', short: 'de straatmuzikant', minAge: 8 },
+        { text: 'een klokkenmaker die de tijd repareert', short: 'de klokkenmaker', minAge: 8 },
+        { text: 'een cartograaf van onbekende landen', short: 'de cartograaf', minAge: 10 },
+        { text: 'een archeoloog die levende fossielen vindt', short: 'de archeoloog', minAge: 10 },
+        { text: 'een nachtwaker in een museum vol geheimen', short: 'de nachtwaker', minAge: 8 },
+        { text: 'een lerares met een vliegend krijtbord', short: 'de lerares', minAge: 6 },
+        { text: 'een astronoom die een nieuwe ster ontdekt', short: 'de astronoom', minAge: 8 },
+        { text: 'een scheepskapitein zonder schip', short: 'de kapitein', minAge: 8 },
+        { text: 'een clown die niemand aan het lachen krijgt', short: 'de clown', minAge: 6 },
+        { text: 'een bloemiste wier bloemen zingen', short: 'de bloemiste', minAge: 6 },
+        { text: 'een taxichauffeur door de tijd', short: 'de taxichauffeur', minAge: 8 },
+        { text: 'een bioloog op een onontdekte planeet', short: 'de bioloog', minAge: 10 },
+        { text: 'een boekhandelaar van levende boeken', short: 'de boekhandelaar', minAge: 8 },
+        { text: 'een architect van droomhuizen', short: 'de architect', minAge: 10 },
+        { text: 'een landbouwer op de maan', short: 'de landbouwer', minAge: 8 },
+        { text: 'een vuilnisman die schatten vindt', short: 'de vuilnisman', minAge: 6 },
+        { text: 'een ijscoman in de woestijn', short: 'de ijscoman', minAge: 6 },
+        { text: 'een brievenbezorger voor spoken', short: 'de brievenbezorger', minAge: 6 },
+        { text: 'een uitvinder van nutteloze uitvindingen', short: 'de uitvinder', minAge: 6 },
+        { text: 'een fotograaf die het onzichtbare vastlegt', short: 'de fotograaf', minAge: 10 },
+        { text: 'een schipper op een zee van wolken', short: 'de schipper', minAge: 8 },
+        { text: 'een trambestuurder in een stad zonder rails', short: 'de trambestuurder', minAge: 8 },
+        { text: 'een schoenmaker van zevenmijlslaarzen', short: 'de schoenmaker', minAge: 6 },
+        { text: 'een apotheker van magische drankjes', short: 'de apotheker', minAge: 8 },
+        { text: 'een ballonvaarder in een storm', short: 'de ballonvaarder', minAge: 6 },
+        { text: 'een kleermaker die onzichtbaarheidsmantels maakt', short: 'de kleermaker', minAge: 8 },
+        { text: 'een filmregisseur wiens films echt worden', short: 'de filmregisseur', minAge: 10 },
+        { text: 'een origamikunstenaar wiens vouwen tot leven komen', short: 'de origamikunstenaar', minAge: 8 },
+        { text: 'een treinmachinist op een spoorlijn die niet bestaat', short: 'de treinmachinist', minAge: 8 },
+        { text: 'een poppenspeler wiens poppen eigen wil hebben', short: 'de poppenspeler', minAge: 8 },
+        { text: 'een vogelwachter die zelf wil vliegen', short: 'de vogelwachter', minAge: 6 },
+        { text: 'een visserman die verhalen vangt', short: 'de visserman', minAge: 6 },
+        { text: 'een danser die de wind kan leiden', short: 'de danser', minAge: 8 },
+        { text: 'een smid die wapens van licht maakt', short: 'de smid', minAge: 8 },
+        { text: 'een timmerman die huizen bouwt van dromen', short: 'de timmerman', minAge: 8 },
+        // ── Familie & leeftijd ──
+        { text: 'een dappere kleuter', short: 'de kleuter', minAge: 6 },
+        { text: 'een moedige oma', short: 'oma', minAge: 6 },
+        { text: 'een avontuurlijke tweeling', short: 'de tweeling', minAge: 6 },
+        { text: 'een onzichtbaar meisje', short: 'het meisje', minAge: 6 },
+        { text: 'een opa met een geheim verleden', short: 'opa', minAge: 8 },
+        { text: 'een baby die alles begrijpt', short: 'de baby', minAge: 6 },
+        { text: 'een tiener met een dubbelleven', short: 'de tiener', minAge: 10 },
+        { text: 'een peuter die met dieren praat', short: 'de peuter', minAge: 6 },
+        { text: 'een oudere zus met bijzondere krachten', short: 'de zus', minAge: 6 },
+        { text: 'een broertje dat altijd verdwijnt', short: 'het broertje', minAge: 6 },
+        { text: 'een vader die nooit ouder wordt', short: 'de vader', minAge: 10 },
+        { text: 'een moeder uit een andere tijd', short: 'de moeder', minAge: 10 },
+        { text: 'een grootmoeder die ooit piraat was', short: 'de grootmoeder', minAge: 8 },
+        { text: 'een jongere broer met een geheime kaart', short: 'de broer', minAge: 6 },
+        { text: 'een tante die alles weet over magie', short: 'de tante', minAge: 6 },
+        { text: 'een kind dat ouder wordt per dag', short: 'het kind', minAge: 8 },
+        { text: 'een neef die spoken kan zien', short: 'de neef', minAge: 8 },
+        { text: 'een vierjarige met een onzichtbare vriend', short: 'de kleuter', minAge: 6 },
+        { text: 'een meisje dat dromen kan binnenstappen', short: 'het meisje', minAge: 8 },
+        { text: 'een jongen die altijd de waarheid moet spreken', short: 'de jongen', minAge: 8 },
+        // ── Historisch & koninklijk ──
+        { text: 'een rebelse prinses', short: 'de prinses', minAge: 6 },
+        { text: 'een gepensioneerde piraat', short: 'de piraat', minAge: 8 },
+        { text: 'een vermomde koning', short: 'de koning', minAge: 10 },
+        { text: 'een verdwaalde ridder', short: 'de ridder', minAge: 6 },
+        { text: 'een farao die uit zijn tombe ontwaakt', short: 'de farao', minAge: 8 },
+        { text: 'een Viking op zoek naar een nieuw land', short: 'de Viking', minAge: 8 },
+        { text: 'een samoerai zonder zwaard', short: 'de samoerai', minAge: 8 },
+        { text: 'een keizerin die haar troon kwijt is', short: 'de keizerin', minAge: 10 },
+        { text: 'een gladiator die niet wil vechten', short: 'de gladiator', minAge: 10 },
+        { text: 'een prins die in een kikker is veranderd', short: 'de prins', minAge: 6 },
+        { text: 'een hofnar die slimmer is dan de koning', short: 'de hofnar', minAge: 8 },
+        { text: 'een piratenkapitein met een geweten', short: 'de kapitein', minAge: 8 },
+        { text: 'een schildknaap met grote dromen', short: 'de schildknaap', minAge: 8 },
+        { text: 'een troubadour met een betoverd lied', short: 'de troubadour', minAge: 10 },
+        { text: 'een generaal die vrede wil', short: 'de generaal', minAge: 10 },
+        { text: 'een woestijnprinses op een kameel', short: 'de prinses', minAge: 6 },
+        { text: 'een ridder met een houten zwaard', short: 'de ridder', minAge: 6 },
+        { text: 'een boogschutter die nooit mist', short: 'de boogschutter', minAge: 8 },
+        { text: 'een kroonprins die niet wil regeren', short: 'de kroonprins', minAge: 10 },
+        { text: 'een page aan het hof van een drakenkoningin', short: 'de page', minAge: 8 },
+        // ── Bovennatuurlijk & sci-fi ──
+        { text: 'een eenzame astronaut', short: 'de astronaut', minAge: 6 },
+        { text: 'een verlegen robot', short: 'de robot', minAge: 6 },
+        { text: 'een tijdreiziger zonder horloge', short: 'de tijdreiziger', minAge: 8 },
+        { text: 'een verliefde vampier', short: 'de vampier', minAge: 12 },
+        { text: 'een robot die wil dromen', short: 'de robot', minAge: 8 },
+        { text: 'een alien die op aarde woont', short: 'de alien', minAge: 8 },
+        { text: 'een engel met één vleugel', short: 'de engel', minAge: 8 },
+        { text: 'een weerwolf die vegetariër is', short: 'de weerwolf', minAge: 10 },
+        { text: 'een geest die niet weet dat die dood is', short: 'de geest', minAge: 10 },
+        { text: 'een android die emoties leert', short: 'de android', minAge: 10 },
+        { text: 'een heks in de moderne tijd', short: 'de heks', minAge: 8 },
+        { text: 'een ruimtepiraat met een gouden hart', short: 'de ruimtepiraat', minAge: 8 },
+        { text: 'een marskolonist met heimwee naar de aarde', short: 'de kolonist', minAge: 10 },
+        { text: 'een vampier die bang is voor bloed', short: 'de vampier', minAge: 10 },
+        { text: 'een hologram dat echt wil worden', short: 'het hologram', minAge: 10 },
+        { text: 'een ruimtewezen op vakantie op aarde', short: 'het ruimtewezen', minAge: 8 },
+        { text: 'een astronaut die vergeten is door de basis', short: 'de astronaut', minAge: 10 },
+        { text: 'een wachter van een portaal tussen werelden', short: 'de wachter', minAge: 10 },
+        { text: 'een spook met geheugenverlies', short: 'het spook', minAge: 8 },
+        { text: 'een mummie die uit het museum ontsnapt', short: 'de mummie', minAge: 6 },
+        { text: 'een alien met hoogtevrees', short: 'de alien', minAge: 6 },
+        { text: 'een superheld die bang is voor spinnen', short: 'de superheld', minAge: 6 },
+        { text: 'een superschurk die eigenlijk aardig is', short: 'de schurk', minAge: 8 },
+        { text: 'een robot die schildert als Rembrandt', short: 'de robot', minAge: 8 },
+        { text: 'een tijdagent met een kapotte tijdmachine', short: 'de tijdagent', minAge: 10 },
+        // ── Natuur verpersoonlijkt ──
+        { text: 'een pratende boom', short: 'de boom', minAge: 6 },
+        { text: 'een boze vulkaan', short: 'de vulkaan', minAge: 6 },
+        { text: 'een eenzame berg', short: 'de berg', minAge: 8 },
+        { text: 'een rivier die achteruit stroomt', short: 'de rivier', minAge: 8 },
+        { text: 'een maan die jaloers is op de zon', short: 'de maan', minAge: 6 },
+        { text: 'een wolk die niet kan regenen', short: 'de wolk', minAge: 6 },
+        { text: 'een ster die naar beneden wil', short: 'de ster', minAge: 6 },
+        { text: 'een wind die verdwaald is', short: 'de wind', minAge: 6 },
+        { text: 'een zee die haar golven kwijt is', short: 'de zee', minAge: 6 },
+        { text: 'een boom die wil wandelen', short: 'de boom', minAge: 6 },
+        { text: 'een regenboog die maar één kleur heeft', short: 'de regenboog', minAge: 6 },
+        { text: 'een sneeuwvlok die niet wil smelten', short: 'de sneeuwvlok', minAge: 6 },
+        { text: 'een zonnestraal in een wereld vol wolken', short: 'de zonnestraal', minAge: 6 },
+        { text: 'een steen die leeft', short: 'de steen', minAge: 8 },
+        { text: 'een berg die wil krimpen', short: 'de berg', minAge: 8 },
+        // ── Alledaags met een twist ──
+        { text: 'een mysterieuze buurvrouw', short: 'de buurvrouw', minAge: 8 },
+        { text: 'een jongen die achteruitloopt door de tijd', short: 'de jongen', minAge: 8 },
+        { text: 'een vrouw die in elke taal kan dromen', short: 'de vrouw', minAge: 10 },
+        { text: 'een man die nooit verdwaalt', short: 'de man', minAge: 8 },
+        { text: 'een kind dat geuren kan zien als kleuren', short: 'het kind', minAge: 8 },
+        { text: 'een buurman die stiekem superheld is', short: 'de buurman', minAge: 6 },
+        { text: 'een meisje met een fotografisch geheugen', short: 'het meisje', minAge: 8 },
+        { text: 'een kunstenaar die tot leven schildert', short: 'de kunstenaar', minAge: 8 },
+        { text: 'een blinde fotograaf', short: 'de fotograaf', minAge: 10 },
+        { text: 'een dove muzikant', short: 'de muzikant', minAge: 10 },
+        { text: 'een schrijver die in zijn eigen boek belandt', short: 'de schrijver', minAge: 8 },
+        { text: 'een meisje dat elk dier kan verstaan', short: 'het meisje', minAge: 6 },
+        { text: 'een jongen met een schaduw die eigen leven leidt', short: 'de jongen', minAge: 8 },
+        { text: 'een kind dat ouder is dan het lijkt', short: 'het kind', minAge: 10 },
+        { text: 'een meisje dat letters kan proeven', short: 'het meisje', minAge: 8 },
+        { text: 'een musicus die stormen kan kalmeren', short: 'de musicus', minAge: 8 },
+        { text: 'een straatartiest die standbeelden tot leven brengt', short: 'de straatartiest', minAge: 8 },
+        { text: 'een leerling-tovenaar die steeds de verkeerde spreuk doet', short: 'de leerling', minAge: 6 },
+        { text: 'een kok wiens gerechten herinneringen oproepen', short: 'de kok', minAge: 10 },
+        { text: 'een zwemmer die onder water kan ademen', short: 'de zwemmer', minAge: 6 },
+        { text: 'een piloot van een vliegend huis', short: 'de piloot', minAge: 6 },
+        { text: 'een verhalenverteller die leugens kan ruiken', short: 'de verhalenverteller', minAge: 8 },
+        { text: 'een dief die alleen dromen steelt', short: 'de dief', minAge: 10 },
+        { text: 'een meisje met vleugels van papier', short: 'het meisje', minAge: 6 },
+        { text: 'een jongen die door muren kan lopen', short: 'de jongen', minAge: 6 },
+        { text: 'een muzikant met een instrument van licht', short: 'de muzikant', minAge: 8 },
+        { text: 'een schilder wiens schilderijen de toekomst tonen', short: 'de schilder', minAge: 10 },
+        { text: 'een tuinier die seizoenen kan besturen', short: 'de tuinier', minAge: 8 },
+        { text: 'een horlogemaker die in de tijd gevangen zit', short: 'de horlogemaker', minAge: 10 },
+        { text: 'een acrobaat die de zwaartekracht tart', short: 'de acrobaat', minAge: 6 },
+        { text: 'een bibliothecaris van verboden boeken', short: 'de bibliothecaris', minAge: 10 },
+        { text: 'een lantaarnopsteker in een stad zonder nacht', short: 'de lantaarnopsteker', minAge: 10 },
+        { text: 'een stuntpiloot met vliegangst', short: 'de stuntpiloot', minAge: 8 },
+        { text: 'een vertaler van dierentalen', short: 'de vertaler', minAge: 6 },
+        { text: 'een droomarchitect die nachtmerries verbouwt', short: 'de droomarchitect', minAge: 10 },
+        { text: 'een theatermaker in een wereld zonder publiek', short: 'de theatermaker', minAge: 10 },
+        { text: 'een brugwachter tussen twee werelden', short: 'de brugwachter', minAge: 10 },
+        { text: 'een wever van onzichtbare draden', short: 'de wever', minAge: 10 },
+        { text: 'een verzamelaar van verloren woorden', short: 'de verzamelaar', minAge: 10 },
+        { text: 'een klusjesman in een betoverd huis', short: 'de klusjesman', minAge: 6 },
+        { text: 'een dichter die werkelijkheid rijmt', short: 'de dichter', minAge: 10 },
+        { text: 'een atleet die niet kan verliezen', short: 'de atleet', minAge: 8 },
+        { text: 'een wiskundige die de formule van geluk zoekt', short: 'de wiskundige', minAge: 12 },
+        { text: 'een glazenwasser op de hoogste toren ter wereld', short: 'de glazenwasser', minAge: 8 },
+        { text: 'een kruidenvrouw met een mysterieus receptenboek', short: 'de kruidenvrouw', minAge: 8 },
+        { text: 'een schaker tegen het lot', short: 'de schaker', minAge: 12 },
+        { text: 'een navigator van de sterren', short: 'de navigator', minAge: 10 },
+        { text: 'een tatoeëerder wiens tekeningen bewegen', short: 'de tatoeëerder', minAge: 10 },
+        { text: 'een student die per ongeluk een formule ontdekt', short: 'de student', minAge: 10 },
+        { text: 'een uitbater van een hotel voor dimensiereizigers', short: 'de uitbater', minAge: 12 },
+        // ── Extra personages ──
+        { text: 'een boswachter met een geheim', short: 'de boswachter', minAge: 6 },
+        { text: 'een lachende clown die stiekem verdrietig is', short: 'de clown', minAge: 8 },
+        { text: 'een timmerman die levend speelgoed maakt', short: 'de timmerman', minAge: 6 },
+        { text: 'een oma die vroeger pirate was', short: 'de oma', minAge: 6 },
+        { text: 'een kind met een onzichtbare vriend', short: 'het kind', minAge: 6 },
+        { text: 'een meteoroloog die het weer kan voelen', short: 'de meteoroloog', minAge: 10 },
+        { text: 'een hondje dat de weg naar huis zoekt', short: 'het hondje', minAge: 6 },
+        { text: 'een jonge uitvinder met twee linkerhanden', short: 'de uitvinder', minAge: 6 },
+        { text: 'een weerwolf die vegetariër wil worden', short: 'de weerwolf', minAge: 8 },
+        { text: 'een oude wijze uil die alles vergeet', short: 'de uil', minAge: 6 },
+        { text: 'een circusdirecteur zonder circus', short: 'de circusdirecteur', minAge: 8 },
+        { text: 'een zeerover met hoogtevrees', short: 'de zeerover', minAge: 6 },
+        { text: 'een bloemist die met planten praat', short: 'de bloemist', minAge: 6 },
+        { text: 'een detective die zichzelf moet opsporen', short: 'de detective', minAge: 10 },
+        { text: 'een pinguïn die droomt van de woestijn', short: 'de pinguïn', minAge: 6 },
+        { text: 'een profvoetballer die niet meer kan scoren', short: 'de voetballer', minAge: 8 },
+        { text: 'een astronoom die een onmogelijke ster ziet', short: 'de astronoom', minAge: 10 },
+        { text: 'een slager die geen vlees meer wil verkopen', short: 'de slager', minAge: 10 },
+        { text: 'een beeldhouwer wiens standbeelden verdwijnen', short: 'de beeldhouwer', minAge: 8 },
+        { text: 'een wielrenner die altijd tweede wordt', short: 'de wielrenner', minAge: 8 },
+        { text: 'een tweeling die elkaars gedachten hoort', short: 'de tweeling', minAge: 8 },
+        { text: 'een kleuter met de stem van een operazanger', short: 'de kleuter', minAge: 6 },
+        { text: 'een fotograaf die de toekomst vastlegt', short: 'de fotograaf', minAge: 10 },
+        { text: 'een papegaai die leugens doorheeft', short: 'de papegaai', minAge: 6 },
+        { text: 'een muis die een leeuw wil worden', short: 'de muis', minAge: 6 },
+        { text: 'een bergbeklimmer die bang is voor hoogtes', short: 'de bergbeklimmer', minAge: 8 },
+        { text: 'een ballerina die alleen in het donker kan dansen', short: 'de ballerina', minAge: 8 },
+        { text: 'een journalist die het grootste verhaal ooit ontdekt', short: 'de journalist', minAge: 10 },
+        { text: 'een straatmuzikant met een betoverd instrument', short: 'de straatmuzikant', minAge: 8 },
+        { text: 'een opa die elke dag een nieuw persoon is', short: 'de opa', minAge: 8 },
+        { text: 'een professor die zijn eigen uitvinding niet begrijpt', short: 'de professor', minAge: 10 },
+        { text: 'een schildpad die de snelste wil zijn', short: 'de schildpad', minAge: 6 },
+        { text: 'een meisje dat in spiegels een andere wereld ziet', short: 'het meisje', minAge: 8 },
+        { text: 'een vuurvreter die bang is voor vlammen', short: 'de vuurvreter', minAge: 8 },
+        { text: 'een archeoloog die zijn eigen graf vindt', short: 'de archeoloog', minAge: 12 },
+        { text: 'een baby die alles kan maar niets mag', short: 'de baby', minAge: 6 },
+        { text: 'een ijscoman in het warmste land ter wereld', short: 'de ijscoman', minAge: 6 },
+        { text: 'een advocaat die de waarheid niet mag vertellen', short: 'de advocaat', minAge: 12 },
+        { text: 'een piloot die nooit heeft gevlogen', short: 'de piloot', minAge: 8 },
+        { text: 'een schilder die alleen maar dromen schildert', short: 'de schilder', minAge: 8 },
+        { text: 'een prinses die liever ridder wil zijn', short: 'de prinses', minAge: 6 },
+        { text: 'een vlinder die terug wil in zijn cocon', short: 'de vlinder', minAge: 6 },
+        { text: 'een lerares die meer leert dan haar leerlingen', short: 'de lerares', minAge: 8 }
+    ];
+
+    // ════════════════════════════════════════════════════════════════
+    //  PLEKKEN — 300 items
+    // ════════════════════════════════════════════════════════════════
+
+    const plekken = [
+        // ── Natuur ──
+        { text: 'op een onbewoond eiland', minAge: 6 },
+        { text: 'in een betoverd bos', minAge: 6 },
+        { text: 'op een slapende vulkaan', minAge: 8 },
+        { text: 'op de Noordpool', minAge: 6 },
+        { text: 'in een magische tuin', minAge: 6 },
+        { text: 'op een regenboog', minAge: 6 },
+        { text: 'in een eeuwig mistig dal', minAge: 10 },
+        { text: 'in een boomhut in de jungle', minAge: 6 },
+        { text: 'op de top van de hoogste berg ter wereld', minAge: 6 },
+        { text: 'in een grot vol gloeiende kristallen', minAge: 6 },
+        { text: 'op een drijvend eiland in de lucht', minAge: 6 },
+        { text: 'in een oerwoud dat in het donker gloeit', minAge: 8 },
+        { text: 'op een bevroren meer', minAge: 6 },
+        { text: 'in een woestijn die \'s nachts bloeit', minAge: 8 },
+        { text: 'op een klif boven een kolkende zee', minAge: 8 },
+        { text: 'in een grot achter een waterval', minAge: 6 },
+        { text: 'in een bos waar de bomen fluisteren', minAge: 6 },
+        { text: 'op een weide vol reusachtige bloemen', minAge: 6 },
+        { text: 'in een moeras waar de mist nooit optrekt', minAge: 8 },
+        { text: 'op een rots midden in de oceaan', minAge: 6 },
+        { text: 'in een vallei die alleen bij volle maan verschijnt', minAge: 10 },
+        { text: 'op een gletsjer die langzaam smelt', minAge: 8 },
+        { text: 'op een heuvel waar het altijd waait', minAge: 6 },
+        { text: 'op een koraalrif vol kleur', minAge: 6 },
+        { text: 'in een bos van verstijfde bomen', minAge: 8 },
+        { text: 'op een bergtop boven de wolken', minAge: 6 },
+        { text: 'in een dal waar het altijd lente is', minAge: 6 },
+        { text: 'op een eiland dat langzaam zinkt', minAge: 8 },
+        { text: 'in een grot die ademt als een levend wezen', minAge: 10 },
+        { text: 'in een regenwoud vol onbekende geluiden', minAge: 6 },
+        { text: 'in een canyon met echo\'s die antwoord geven', minAge: 8 },
+        { text: 'op een bloemenweide die kleurt met je stemming', minAge: 8 },
+        { text: 'in een bos waar het altijd herfst is', minAge: 6 },
+        { text: 'op de rand van een waterval', minAge: 6 },
+        { text: 'in een oase midden in de woestijn', minAge: 6 },
+        { text: 'op een drijvende ijsberg', minAge: 6 },
+        { text: 'op een vulkanisch strand van zwart zand', minAge: 8 },
+        { text: 'op een plateau dat niemand ooit heeft bereikt', minAge: 10 },
+        { text: 'in een bamboebos met fluisterende wind', minAge: 8 },
+        { text: 'op een savanne zonder horizon', minAge: 8 },
+        // ── Ruimte ──
+        { text: 'op de maan', minAge: 6 },
+        { text: 'in een iglo op Mars', minAge: 6 },
+        { text: 'op een woestijnplaneet', minAge: 8 },
+        { text: 'in een ruimtestation dat om de aarde draait', minAge: 8 },
+        { text: 'op een asteroïde', minAge: 8 },
+        { text: 'op een planeet met twee zonnen', minAge: 8 },
+        { text: 'in een sterrenschip op drift', minAge: 10 },
+        { text: 'op een planeet van ijs', minAge: 8 },
+        { text: 'op een maan van Jupiter', minAge: 8 },
+        { text: 'in een ruimtelift naar de sterren', minAge: 10 },
+        { text: 'op een planeet waar het altijd nacht is', minAge: 8 },
+        { text: 'in een futuristische stad op Mars', minAge: 10 },
+        { text: 'op een zwevend platform in de ruimte', minAge: 8 },
+        { text: 'in de krater van een vulkaan op de maan', minAge: 8 },
+        { text: 'op een planeet van kristal', minAge: 8 },
+        { text: 'op een ruimtestation vol planten', minAge: 8 },
+        { text: 'op een planeet waar alles ondersteboven is', minAge: 8 },
+        { text: 'in een kolonie op een komeet', minAge: 10 },
+        { text: 'op een ringplaneet met kronkelende paden', minAge: 10 },
+        { text: 'in een laboratorium zwevend in de ruimte', minAge: 10 },
+        // ── Gebouwen ──
+        { text: 'in een middeleeuws kasteel', minAge: 6 },
+        { text: 'in een reusachtige bibliotheek', minAge: 6 },
+        { text: 'in een spookhuis', minAge: 8 },
+        { text: 'in een snoepfabriek', minAge: 6 },
+        { text: 'in een reuzachtig kussenkasteel', minAge: 6 },
+        { text: 'op het dak van een wolkenkrabber', minAge: 8 },
+        { text: 'in een verlaten pretpark', minAge: 8 },
+        { text: 'in een museum dat tot leven komt', minAge: 6 },
+        { text: 'in een ondergrondse tempel', minAge: 8 },
+        { text: 'in een school na middernacht', minAge: 8 },
+        { text: 'in een kasteel van ijs', minAge: 6 },
+        { text: 'in een vuurtoren op een eenzame rots', minAge: 8 },
+        { text: 'in een geheime bunker onder de stad', minAge: 10 },
+        { text: 'op een toren zonder trap', minAge: 8 },
+        { text: 'in een verlaten fabriek vol machines', minAge: 8 },
+        { text: 'in een restaurant onder water', minAge: 8 },
+        { text: 'in een hotel waar elke kamer een andere tijd is', minAge: 10 },
+        { text: 'in een theater waar het publiek niet bestaat', minAge: 10 },
+        { text: 'in een labyrint van spiegels', minAge: 8 },
+        { text: 'in een ziekenhuis voor magische wezens', minAge: 8 },
+        { text: 'in een klokkentoren bij middernacht', minAge: 8 },
+        { text: 'in een groot warenhuis na sluitingstijd', minAge: 6 },
+        { text: 'in een bioscoop waar de films echt worden', minAge: 8 },
+        { text: 'in een verborgen kamer achter een boekenkast', minAge: 6 },
+        { text: 'in een speelgoedwinkel die \'s nachts tot leven komt', minAge: 6 },
+        { text: 'in een verlaten station waar nog één trein stopt', minAge: 8 },
+        { text: 'in een windmolen midden op zee', minAge: 8 },
+        { text: 'in een glazen huis op de bodem van een meer', minAge: 8 },
+        { text: 'in een paleis van schelpen en koraal', minAge: 6 },
+        { text: 'in een boomhuis zo groot als een paleis', minAge: 6 },
+        { text: 'in een draaiende toren die nooit stilstaat', minAge: 8 },
+        { text: 'in een observatorium boven de wolken', minAge: 10 },
+        { text: 'in een ondergronds labyrint van gangen', minAge: 8 },
+        { text: 'in een telefooncel die overal naartoe kan', minAge: 8 },
+        { text: 'in een poppenhuis dat levensecht is', minAge: 6 },
+        { text: 'in een garage vol uitvindingen', minAge: 6 },
+        { text: 'in een gevangenis waar de muren fluisteren', minAge: 10 },
+        { text: 'in een stationshal vol klokken die anders lopen', minAge: 8 },
+        { text: 'in een koepel van onbreekbaar glas', minAge: 8 },
+        // ── Voertuigen ──
+        { text: 'in een onderzeeër', minAge: 6 },
+        { text: 'op een vliegend tapijt', minAge: 6 },
+        { text: 'op een piratenschip', minAge: 6 },
+        { text: 'op een trein die nooit stopt', minAge: 8 },
+        { text: 'op een schip van papier', minAge: 6 },
+        { text: 'op een reuzenrad dat niet stopt', minAge: 6 },
+        { text: 'in een tijdmachine', minAge: 8 },
+        { text: 'in een luchtballon boven de wolken', minAge: 6 },
+        { text: 'in een raket op weg naar het onbekende', minAge: 6 },
+        { text: 'op een zeilboot midden op de oceaan', minAge: 6 },
+        { text: 'in een treinstel zonder machinist', minAge: 8 },
+        { text: 'op een vlot op een ondergrondse rivier', minAge: 6 },
+        { text: 'in een duikboot van glas', minAge: 6 },
+        { text: 'op een slee getrokken door wolven', minAge: 8 },
+        { text: 'in een vliegtuig dat onder water kan', minAge: 8 },
+        { text: 'op een skateboard door de ruimte', minAge: 6 },
+        { text: 'in een bus naar nergens', minAge: 8 },
+        { text: 'op een fiets die door de tijd trapt', minAge: 8 },
+        { text: 'in een kano op een rivier van lava', minAge: 8 },
+        { text: 'op een surfplank op reuzengolven', minAge: 8 },
+        { text: 'op een kruiwagen naar het avontuur', minAge: 6 },
+        { text: 'op een stoomtrein door een sprookjesland', minAge: 6 },
+        { text: 'in een karretje op een mijnspoor', minAge: 8 },
+        { text: 'op een kameel door een zandstorm', minAge: 8 },
+        { text: 'op een draak als vliegtuig', minAge: 6 },
+        { text: 'in een gondel op een Venetië in de wolken', minAge: 10 },
+        { text: 'in een ruimtecapsule die de verkeerde kant op gaat', minAge: 10 },
+        { text: 'op een tandem met een onbekende', minAge: 8 },
+        // ── Fantasie & magie ──
+        { text: 'in een stad zonder kleur', minAge: 10 },
+        { text: 'in een drijvend dorp', minAge: 8 },
+        { text: 'op een onzichtbare brug', minAge: 8 },
+        { text: 'in een omgekeerde wereld waar alles ondersteboven is', minAge: 6 },
+        { text: 'op een eiland dat door de lucht vaart', minAge: 6 },
+        { text: 'in een wereld gemaakt van snoep', minAge: 6 },
+        { text: 'in een dorp waar het altijd kerstavond is', minAge: 6 },
+        { text: 'op een pad dat steeds van richting verandert', minAge: 8 },
+        { text: 'in een tuin vol pratende bloemen', minAge: 6 },
+        { text: 'in een wereld achter een spiegel', minAge: 8 },
+        { text: 'op een schaakbord zo groot als een stad', minAge: 8 },
+        { text: 'in een boek waar je doorheen kunt lopen', minAge: 6 },
+        { text: 'in een schilderij dat beweegt', minAge: 8 },
+        { text: 'op een trap die nergens heen leidt', minAge: 8 },
+        { text: 'in een land waar het altijd schemering is', minAge: 10 },
+        { text: 'op een eiland van muziek', minAge: 6 },
+        { text: 'in een kasteel van wolken', minAge: 6 },
+        { text: 'in een bos waar de tijd anders loopt', minAge: 10 },
+        { text: 'op een markt waar je herinneringen kunt kopen', minAge: 10 },
+        { text: 'in een dorp op de rug van een slapende reus', minAge: 8 },
+        { text: 'in een stad zonder schaduwen', minAge: 10 },
+        { text: 'op een weg gemaakt van regenbogen', minAge: 6 },
+        { text: 'in een wereld waar dromen tastbaar zijn', minAge: 10 },
+        { text: 'in een huis met kamers die steeds wisselen', minAge: 8 },
+        { text: 'op een brug tussen twee werelden', minAge: 8 },
+        { text: 'in een tuin waar alles reusachtig is', minAge: 6 },
+        { text: 'in een land achter de horizon', minAge: 6 },
+        { text: 'op een wolkenveld vol drijvende eilanden', minAge: 6 },
+        { text: 'in een wereld zonder geluid', minAge: 10 },
+        { text: 'in een sneeuwbol die je kunt binnenstappen', minAge: 6 },
+        { text: 'op een trap die tot in de sterren reikt', minAge: 6 },
+        { text: 'in een speelgoedstad vol bewegende figuren', minAge: 6 },
+        { text: 'in een betoverd theater waar het decor echt is', minAge: 8 },
+        { text: 'op een berg van boeken', minAge: 6 },
+        { text: 'in een onderwaterpaleis', minAge: 6 },
+        { text: 'in een stad die alleen bij maanlicht bestaat', minAge: 10 },
+        { text: 'in een bos vol lichtgevende paddestoelen', minAge: 6 },
+        { text: 'in een kasteel dat beweegt op poten', minAge: 8 },
+        { text: 'op een plek waar de wind kleuren heeft', minAge: 6 },
+        { text: 'in een doolhof dat steeds verandert', minAge: 8 },
+        { text: 'in een wereld waar alles van glas is', minAge: 8 },
+        { text: 'in een land waar de seizoenen per stap wisselen', minAge: 8 },
+        { text: 'op het strand van een zee van verhalen', minAge: 8 },
+        { text: 'in een stad gebouwd op muzieknoten', minAge: 10 },
+        { text: 'op een kermisveld dat zichzelf bouwt', minAge: 8 },
+        // ── Stedelijk ──
+        { text: 'in een drukke markthal', minAge: 6 },
+        { text: 'op een wolk', minAge: 6 },
+        { text: 'op de bodem van de oceaan', minAge: 6 },
+        { text: 'in een ondergrondse stad', minAge: 8 },
+        { text: 'in een groot park na sluitingstijd', minAge: 6 },
+        { text: 'op een kruispunt waar alle wegen hetzelfde lijken', minAge: 8 },
+        { text: 'in een stad die onder water staat', minAge: 8 },
+        { text: 'op een verlaten schoolplein', minAge: 6 },
+        { text: 'in een metrostation dat niet op de kaart staat', minAge: 10 },
+        { text: 'op een plein waar iedereen danst', minAge: 6 },
+        { text: 'in een supermarkt om middernacht', minAge: 6 },
+        { text: 'op een treinperron waar nooit een trein komt', minAge: 8 },
+        { text: 'in een stad die alleen \'s nachts bestaat', minAge: 10 },
+        { text: 'in een flatgebouw met oneindig veel verdiepingen', minAge: 8 },
+        { text: 'op een markt waar elke kraam uit een ander land komt', minAge: 6 },
+        { text: 'in een kelder die groter is dan het huis erboven', minAge: 8 },
+        { text: 'op een bankje in een park dat niemand kent', minAge: 6 },
+        { text: 'in een tunnel die steeds langer wordt', minAge: 8 },
+        { text: 'op een bushalte in het niets', minAge: 8 },
+        { text: 'op een dak waar je de hele wereld kunt zien', minAge: 6 },
+        { text: 'op een schoolplein waar het altijd vakantie is', minAge: 6 },
+        { text: 'in een tram die door de wolken rijdt', minAge: 8 },
+        { text: 'in een verlaten zwembad vol vissen', minAge: 8 },
+        { text: 'op een speelplaats voor reuzen', minAge: 6 },
+        { text: 'in een straat waar elk huis een andere kleur heeft', minAge: 6 },
+        { text: 'in een winkelcentrum waar de tijd stilstaat', minAge: 8 },
+        { text: 'in een café waar de koffie je dromen laat zien', minAge: 10 },
+        { text: 'op een kermis die elke dag op een andere plek verschijnt', minAge: 8 },
+        { text: 'in een straat die van snoep gemaakt is', minAge: 6 },
+        { text: 'in een stad waar alle gebouwen scheef staan', minAge: 8 },
+        { text: 'in een park met standbeelden die \'s nachts bewegen', minAge: 8 },
+        // ── Historisch ──
+        { text: 'in een Egyptische piramide', minAge: 8 },
+        { text: 'in een Japanse tempel in de bergen', minAge: 8 },
+        { text: 'in een Vikingdorp aan zee', minAge: 8 },
+        { text: 'op een Maya-tempel midden in de jungle', minAge: 8 },
+        { text: 'op de Grote Muur van China', minAge: 8 },
+        { text: 'in een ridderburcht tijdens een beleg', minAge: 10 },
+        { text: 'op de ruïnes van een vergeten beschaving', minAge: 10 },
+        { text: 'op een handelsschip in de Gouden Eeuw', minAge: 10 },
+        { text: 'in een piramide die nog niemand heeft geopend', minAge: 8 },
+        { text: 'op een karavaan door de Sahara', minAge: 8 },
+        { text: 'in een Grieks amfitheater onder de sterren', minAge: 10 },
+        { text: 'in een nomadentent in de steppen', minAge: 10 },
+        // ── Onder water ──
+        { text: 'op de bodem van een meer met een geheim', minAge: 6 },
+        { text: 'in een onderwaterstad vol lichten', minAge: 8 },
+        { text: 'op een gezonken schip vol schatten', minAge: 6 },
+        { text: 'in een koraalpaleis', minAge: 6 },
+        { text: 'op de rug van een walvis', minAge: 6 },
+        { text: 'in een luchtbel onder water', minAge: 6 },
+        { text: 'in een school van gloeiende kwallen', minAge: 6 },
+        { text: 'in een gezonken bibliotheek', minAge: 8 },
+        { text: 'in een zeepbel die naar de diepte zinkt', minAge: 6 },
+        // ── Bijzonder ──
+        { text: 'in een droom die je niet kunt verlaten', minAge: 10 },
+        { text: 'op de rug van een vliegende walvis', minAge: 6 },
+        { text: 'in de binnenkant van een klok', minAge: 8 },
+        { text: 'in de zakken van een reuzenjjas', minAge: 6 },
+        { text: 'op een landkaart die werkelijkheid wordt', minAge: 8 },
+        { text: 'op de pagina van een opengeslagen boek', minAge: 6 },
+        { text: 'in de ruimte tussen twee hartslagen', minAge: 12 },
+        { text: 'op een plek die niet bestaat maar toch echt aanvoelt', minAge: 10 },
+        // ── Extra plekken ──
+        { text: 'in een iglo midden in de woestijn', minAge: 6 },
+        { text: 'op een drijvend vlot op een lavarivvier', minAge: 8 },
+        { text: 'in een geheim laboratorium onder een school', minAge: 8 },
+        { text: 'op de bodem van een opgedroogde zee', minAge: 8 },
+        { text: 'in een toren van gestapelde boeken', minAge: 6 },
+        { text: 'op een speelplaats die alleen s nachts verschijnt', minAge: 8 },
+        { text: 'in een museum waar alles leeft', minAge: 6 },
+        { text: 'op een wolk die steeds van vorm verandert', minAge: 6 },
+        { text: 'in een fabriek die dromen produceert', minAge: 8 },
+        { text: 'op een vliegend tapijt boven een slapende stad', minAge: 6 },
+        { text: 'in een sneeuwbol die iemand vasthoudt', minAge: 8 },
+        { text: 'op het dak van een rijdende trein', minAge: 8 },
+        { text: 'in een schoolkantine na sluitingstijd', minAge: 6 },
+        { text: 'op een reuzenrad dat niet meer stopt', minAge: 6 },
+        { text: 'in een grot vol kristallen die zingen', minAge: 6 },
+        { text: 'op een onbewoond eiland met één boom', minAge: 6 },
+        { text: 'in een garage vol halve uitvindingen', minAge: 8 },
+        { text: 'op de rand van een waterval', minAge: 8 },
+        { text: 'in een treinstation zonder treinen', minAge: 8 },
+        { text: 'op een schaakbord zo groot als een stad', minAge: 10 },
+        { text: 'in een ballon die langzaam leegloopt', minAge: 6 },
+        { text: 'op een markt waar je met verhalen betaalt', minAge: 8 },
+        { text: 'in een snoepwinkel met verboden snoepjes', minAge: 6 },
+        { text: 'op een berg die elke dag hoger wordt', minAge: 6 },
+        { text: 'in een park waar de seizoenen door elkaar lopen', minAge: 8 },
+        { text: 'op een brug die maar naar één kant leidt', minAge: 8 },
+        { text: 'in de kelder van een verlaten ziekenhuis', minAge: 10 },
+        { text: 'op een skatebaan op de maan', minAge: 6 },
+        { text: 'in een telefooncel naar een andere dimensie', minAge: 8 },
+        { text: 'op het strand waar de golven achteruit rollen', minAge: 6 },
+        { text: 'in een bioscoop die films uit je leven draait', minAge: 10 },
+        { text: 'op een parkeerplaats vol verlaten auto s', minAge: 8 },
+        { text: 'in een tent op de Noordpool', minAge: 6 },
+        { text: 'op een wipwap aan de rand van een klif', minAge: 8 },
+        { text: 'in een aquarium waar je zelf de vis bent', minAge: 6 },
+        { text: 'op een dansende ijsschots', minAge: 6 },
+        { text: 'in een restaurant waar het eten terug praat', minAge: 6 },
+        { text: 'op een eiland van drijvend afval', minAge: 10 },
+        { text: 'in de cockpit van een neerstortend vliegtuig', minAge: 10 },
+        { text: 'op een feestje waar niemand je kent', minAge: 8 },
+        { text: 'in een postkantoor vol onbezorgde brieven', minAge: 8 },
+        { text: 'op een schommel die steeds hoger gaat', minAge: 6 },
+        { text: 'in een konijnenhol dat maar dieper gaat', minAge: 6 },
+        { text: 'op een podium voor duizend lege stoelen', minAge: 8 },
+        { text: 'in een glazen huis waar iedereen je kan zien', minAge: 8 },
+        { text: 'op een vlot van aangespoeld hout', minAge: 6 },
+        { text: 'in een kerk die is omgebouwd tot speelhal', minAge: 8 },
+        { text: 'op een eindeloos kruispunt', minAge: 10 },
+        { text: 'in een zolder vol vergeten spullen', minAge: 6 },
+        { text: 'op de stoep voor een deur die op een kier staat', minAge: 8 },
+        { text: 'in een vleermuzengrot bij zonsopgang', minAge: 8 },
+        { text: 'op een trampoline in de wolken', minAge: 6 },
+        { text: 'in een tuinhuis dat groter is van binnen', minAge: 6 },
+        { text: 'op een vergeten station in een veld vol klaprozen', minAge: 8 },
+        { text: 'in een snackbar aan het einde van de wereld', minAge: 8 },
+        { text: 'op een heuvel waar de wind altijd waait', minAge: 6 },
+        { text: 'in een bioscoopzaal die ondersteboven hangt', minAge: 8 },
+        { text: 'op een kerkhof dat vol bloemen staat', minAge: 10 },
+        { text: 'in een treinstel dat onder water rijdt', minAge: 8 },
+        { text: 'op een klif met uitzicht op het niets', minAge: 10 },
+        { text: 'in een kamer waar de muren ademen', minAge: 10 },
+        { text: 'op een camping waar niemand ooit vertrekt', minAge: 8 },
+        { text: 'in een duikboot van papier-maché', minAge: 6 },
+        { text: 'op een ladder die nergens op leunt', minAge: 8 },
+        { text: 'in een kasteel gebouwd van zand', minAge: 6 },
+        { text: 'op de schouders van een slapende reus', minAge: 6 },
+        { text: 'in een tunnel die steeds smaller wordt', minAge: 8 },
+        { text: 'op een pier tijdens een storm', minAge: 8 }
+    ];
+
+    // ════════════════════════════════════════════════════════════════
+    //  PROBLEMEN — 300 items
+    // ════════════════════════════════════════════════════════════════
+
+    const problemen = [
+        // ── Natuur & weer ──
+        { text: 'er nadert een grote storm', minAge: 6 },
+        { text: 'het water stijgt snel', minAge: 6 },
+        { text: 'de zon komt niet meer op', minAge: 8 },
+        { text: 'het begint ineens heel hard te regenen', minAge: 6 },
+        { text: 'alle kleuren zijn verdwenen', minAge: 6 },
+        { text: 'de grond begint te schudden', minAge: 6 },
+        { text: 'er valt een eeuwige sneeuw', minAge: 6 },
+        { text: 'de wind blaast steeds harder', minAge: 6 },
+        { text: 'een mist trekt op die alles verbergt', minAge: 6 },
+        { text: 'het is al drie dagen nacht', minAge: 8 },
+        { text: 'de sterren vallen uit de lucht', minAge: 6 },
+        { text: 'het regent naar boven in plaats van naar beneden', minAge: 6 },
+        { text: 'een vulkaan dreigt uit te barsten', minAge: 8 },
+        { text: 'de maan komt steeds dichterbij', minAge: 8 },
+        { text: 'de rivieren stromen achteruit', minAge: 8 },
+        { text: 'er vallen vissen uit de lucht', minAge: 6 },
+        { text: 'de seizoenen veranderen elke tien minuten', minAge: 8 },
+        { text: 'er groeit onkruid dat alles overwoekert', minAge: 6 },
+        { text: 'een lawine blokkeert de enige weg', minAge: 6 },
+        { text: 'de rivier bevriest midden in de zomer', minAge: 8 },
+        { text: 'er komt een vloedgolf aan', minAge: 8 },
+        { text: 'de zee trekt zich terug en komt niet terug', minAge: 8 },
+        { text: 'een tornado zuigt alles naar boven', minAge: 6 },
+        { text: 'de lucht kleurt opeens groen', minAge: 6 },
+        { text: 'een regenboog blokkeert de weg', minAge: 6 },
+        // ── Kwijt & verloren ──
+        { text: 'de enige deur zit op slot', minAge: 6 },
+        { text: 'de kaart klopt niet', minAge: 6 },
+        { text: 'de weg terug is afgesloten', minAge: 6 },
+        { text: 'het favoriete speelgoed is kwijt', minAge: 6 },
+        { text: 'het kompas wijst de verkeerde kant op', minAge: 6 },
+        { text: 'alle sleutels zijn verdwenen', minAge: 6 },
+        { text: 'de brug is ingestort', minAge: 6 },
+        { text: 'het eten is op', minAge: 6 },
+        { text: 'de lantaarn is kapot', minAge: 6 },
+        { text: 'de boot heeft een lek', minAge: 6 },
+        { text: 'het touw is doorgesneden', minAge: 8 },
+        { text: 'de schatkaart is gescheurd', minAge: 6 },
+        { text: 'er ontbreekt een puzzelstuk', minAge: 6 },
+        { text: 'de uitgang is verdwenen', minAge: 6 },
+        { text: 'de brief met de aanwijzingen is onleesbaar geworden', minAge: 8 },
+        { text: 'de batterij is bijna leeg', minAge: 6 },
+        { text: 'de code om de kluis te openen is vergeten', minAge: 8 },
+        { text: 'het geheime ingrediënt ontbreekt', minAge: 6 },
+        { text: 'het vlot is weggedreven', minAge: 6 },
+        { text: 'de ladder is te kort', minAge: 6 },
+        { text: 'het kompas is gebroken', minAge: 6 },
+        { text: 'de nooduitgang leidt naar een muur', minAge: 8 },
+        { text: 'alle gereedschappen zijn verdwenen', minAge: 6 },
+        { text: 'het laatste beetje water is bijna op', minAge: 8 },
+        { text: 'het medicijn is bijna op', minAge: 8 },
+        // ── Tijd ──
+        { text: 'de tijd staat stil', minAge: 8 },
+        { text: 'er is nog maar één dag over', minAge: 10 },
+        { text: 'de klok tikt achteruit', minAge: 8 },
+        { text: 'een brief komt honderd jaar te laat', minAge: 10 },
+        { text: 'de dagen worden steeds korter', minAge: 8 },
+        { text: 'iedereen behalve jij beweegt in slow motion', minAge: 8 },
+        { text: 'de tijd herhaalt zich steeds opnieuw', minAge: 10 },
+        { text: 'elke nacht begin je weer aan dezelfde dag', minAge: 10 },
+        { text: 'de toekomst is per ongeluk veranderd', minAge: 10 },
+        { text: 'de klokken lopen alle kanten op', minAge: 8 },
+        { text: 'er is een tijdlek: verleden en heden lopen door elkaar', minAge: 10 },
+        { text: 'je wordt elke ochtend een dag jonger', minAge: 10 },
+        { text: 'de kalender slaat steeds een maand over', minAge: 8 },
+        { text: 'de wekker gaat nooit af', minAge: 6 },
+        { text: 'de nacht duurt al drie weken', minAge: 8 },
+        { text: 'bij elke stap springt de tijd een uur vooruit', minAge: 10 },
+        { text: 'er is een dag uit de week gestolen', minAge: 8 },
+        { text: 'het uur voor middernacht duurt eindeloos', minAge: 10 },
+        // ── Magie & bovennatuurlijk ──
+        { text: 'de magie verdwijnt langzaam', minAge: 8 },
+        { text: 'alles verandert langzaam in steen', minAge: 8 },
+        { text: 'de zwaartekracht werkt niet meer', minAge: 8 },
+        { text: 'elke leugen wordt zichtbaar als kleur', minAge: 12 },
+        { text: 'iemand heeft het einde van het verhaal gestolen', minAge: 10 },
+        { text: 'alles wat je aanraakt wordt goud', minAge: 8 },
+        { text: 'de schaduwen beginnen te bewegen', minAge: 8 },
+        { text: 'woorden die je uitspreekt worden werkelijkheid', minAge: 8 },
+        { text: 'een spreuk is per ongeluk uitgesproken', minAge: 6 },
+        { text: 'de spiegel toont een andere werkelijkheid', minAge: 10 },
+        { text: 'een magisch voorwerp is gestolen', minAge: 6 },
+        { text: 'de betovering werkt niet meer', minAge: 6 },
+        { text: 'alles begint te zweven', minAge: 6 },
+        { text: 'er verschijnen barsten in de lucht', minAge: 8 },
+        { text: 'dromen beginnen uit te lekken in de werkelijkheid', minAge: 10 },
+        { text: 'alles krimpt langzaam', minAge: 6 },
+        { text: 'kleuren verdwijnen een voor een', minAge: 6 },
+        { text: 'een vloek maakt iedereen onzichtbaar', minAge: 8 },
+        { text: 'de wereld draait langzaam op zijn kop', minAge: 8 },
+        { text: 'de magische bron is opgedroogd', minAge: 8 },
+        { text: 'een portaal naar een andere wereld staat open en sluit snel', minAge: 10 },
+        { text: 'het magische boek is per ongeluk geopend', minAge: 6 },
+        { text: 'alle spiegels zijn tegelijk gebarsten', minAge: 8 },
+        { text: 'een toverspreuk kan niet ongedaan gemaakt worden', minAge: 8 },
+        { text: 'de trollen zijn wakker geworden', minAge: 6 },
+        { text: 'een drakenei begint te barsten', minAge: 6 },
+        { text: 'de grens tussen werelden wordt dunner', minAge: 10 },
+        { text: 'magische wezens verliezen hun krachten', minAge: 8 },
+        { text: 'iemands wens is per ongeluk uitgekomen en dat is een ramp', minAge: 10 },
+        { text: 'elk geluid veroorzaakt een andere kleur', minAge: 8 },
+        // ── Sociaal ──
+        { text: 'iedereen is plotseling verdwenen', minAge: 8 },
+        { text: 'niemand gelooft het verhaal', minAge: 8 },
+        { text: 'een vreemdeling volgt hen', minAge: 8 },
+        { text: 'twee vijanden moeten samenwerken', minAge: 10 },
+        { text: 'een belofte moet gebroken worden', minAge: 12 },
+        { text: 'de waarheid mag niet verteld worden', minAge: 12 },
+        { text: 'de held is bang voor het antwoord', minAge: 10 },
+        { text: 'niemand kan meer lachen', minAge: 6 },
+        { text: 'niemand herinnert zich wie je bent', minAge: 10 },
+        { text: 'je beste vriend is veranderd in een vijand', minAge: 10 },
+        { text: 'iemand liegt, maar je weet niet wie', minAge: 8 },
+        { text: 'een bondgenoot heeft een geheim', minAge: 10 },
+        { text: 'niemand spreekt dezelfde taal', minAge: 8 },
+        { text: 'een vriend is in gevaar', minAge: 6 },
+        { text: 'er is een verrader in de groep', minAge: 10 },
+        { text: 'iedereen is bang maar niemand zegt het', minAge: 10 },
+        { text: 'de leider is verdwenen', minAge: 8 },
+        { text: 'niemand vertrouwt de nieuweling', minAge: 8 },
+        { text: 'een geheim moet beschermd worden', minAge: 8 },
+        { text: 'de bewakers laten niemand door', minAge: 6 },
+        { text: 'iemand roept om hulp maar niemand reageert', minAge: 6 },
+        { text: 'de boodschapper is niet aangekomen', minAge: 8 },
+        { text: 'een held moet kiezen tussen twee vrienden', minAge: 10 },
+        { text: 'er is een misverstand dat alles erger maakt', minAge: 8 },
+        { text: 'de enige die kan helpen weigert', minAge: 8 },
+        { text: 'een kind is verdwaald en alleen', minAge: 6 },
+        { text: 'de groep raakt verdeeld', minAge: 8 },
+        { text: 'iemand is niet wie die zegt te zijn', minAge: 10 },
+        { text: 'een uitnodiging blijkt een val te zijn', minAge: 10 },
+        { text: 'niemand wil de leiding nemen', minAge: 8 },
+        // ── Mysteries ──
+        { text: 'een schat moet gevonden worden', minAge: 6 },
+        { text: 'een geheim dreigt ontdekt te worden', minAge: 10 },
+        { text: 'er klinkt een geluid dat niemand kan verklaren', minAge: 8 },
+        { text: 'een onbekende taal moet ontcijferd worden', minAge: 10 },
+        { text: 'een geheime boodschap verschijnt op de muur', minAge: 6 },
+        { text: 'er verdwijnen spullen zonder verklaring', minAge: 6 },
+        { text: 'een deur verschijnt die er gisteren niet was', minAge: 6 },
+        { text: 'er liggen voetsporen die nergens vandaan komen', minAge: 6 },
+        { text: 'een stem fluistert maar er is niemand', minAge: 8 },
+        { text: 'een oud dagboek onthult een schrikbarende waarheid', minAge: 10 },
+        { text: 'de oplossing is verborgen in een raadsel', minAge: 8 },
+        { text: 'een kaart toont een plek die niet zou moeten bestaan', minAge: 8 },
+        { text: 'een geheim gangenstelsel is ontdekt', minAge: 6 },
+        { text: 'een verborgen kamer is gevonden', minAge: 6 },
+        { text: 'een oud voorwerp begint opeens te gloeien', minAge: 6 },
+        { text: 'een schilderij verandert elke nacht', minAge: 8 },
+        { text: 'een dagboek schrijft zichzelf verder', minAge: 8 },
+        { text: 'er verschijnt een mysterieuze kaart in je zak', minAge: 6 },
+        { text: 'een oude klok begint na jaren weer te tikken', minAge: 8 },
+        { text: 'een geheimzinnige brief arriveert zonder afzender', minAge: 8 },
+        { text: 'een beeld in het museum knipoogt', minAge: 6 },
+        { text: 'een kist kan niet geopend worden maar er klopt iets van binnenuit', minAge: 8 },
+        { text: 'een echo herhaalt woorden die niemand gezegd heeft', minAge: 8 },
+        { text: 'er is een deur die elke keer naar een andere plek leidt', minAge: 8 },
+        { text: 'een code is gekraakt maar de boodschap is vreemd', minAge: 10 },
+        // ── Fysieke obstakels ──
+        { text: 'het licht gaat steeds uit', minAge: 6 },
+        { text: 'een labyrint heeft geen uitgang', minAge: 6 },
+        { text: 'het pad splitst in drieën en er is geen aanwijzing', minAge: 6 },
+        { text: 'een muur die steeds hoger wordt blokkeert de weg', minAge: 6 },
+        { text: 'de grond begint langzaam weg te zakken', minAge: 8 },
+        { text: 'de trap verdwijnt achter je', minAge: 8 },
+        { text: 'de gang wordt steeds smaller', minAge: 6 },
+        { text: 'het plafond daalt langzaam', minAge: 8 },
+        { text: 'de vloer is bedekt met iets dat je niet mag aanraken', minAge: 6 },
+        { text: 'de muren schuiven langzaam dicht', minAge: 8 },
+        { text: 'een hangbrug wiebelt gevaarlijk', minAge: 6 },
+        { text: 'een tunnel dreigt in te storten', minAge: 8 },
+        { text: 'de trap leidt steeds naar dezelfde verdieping', minAge: 8 },
+        { text: 'een onzichtbare muur blokkeert de weg', minAge: 8 },
+        { text: 'de vloer is van glas en eronder is een afgrond', minAge: 8 },
+        { text: 'het zand zakt weg als drijfzand', minAge: 6 },
+        { text: 'de weg loopt dood op een klif', minAge: 8 },
+        { text: 'een vallende boom blokkeert het pad', minAge: 6 },
+        { text: 'een rots blokkeert de uitgang', minAge: 6 },
+        { text: 'een rivier is te breed en te wild om over te steken', minAge: 6 },
+        // ── Transformatie ──
+        { text: 'alle herinneringen vervagen', minAge: 10 },
+        { text: 'de grens tussen droom en werkelijkheid vervaagt', minAge: 13 },
+        { text: 'alles groeit oncontroleerbaar snel', minAge: 6 },
+        { text: 'iedereen verandert langzaam in een dier', minAge: 8 },
+        { text: 'de wereld wordt zwart-wit', minAge: 6 },
+        { text: 'alles wat je zegt verschijnt als tekst in de lucht', minAge: 8 },
+        { text: 'je eigen spiegelbeeld gehoorzaamt niet meer', minAge: 8 },
+        { text: 'je schaduw heeft een eigen wil', minAge: 8 },
+        { text: 'iedereen wordt langzaam kleiner', minAge: 6 },
+        { text: 'alles smelt dat je aanraakt', minAge: 6 },
+        { text: 'je kunt opeens ieders gedachten horen', minAge: 10 },
+        { text: 'tekeningen komen tot leven', minAge: 6 },
+        { text: 'alles wordt doorzichtig', minAge: 8 },
+        { text: 'je vingers laten vonken achter', minAge: 6 },
+        { text: 'de kleuren van de wereld wisselen om', minAge: 6 },
+        { text: 'alles wat je aanraakt begint te zingen', minAge: 6 },
+        { text: 'je laat een spoor van bloemen achter bij elke stap', minAge: 6 },
+        { text: 'elk voorwerp dat je oppakt verandert van vorm', minAge: 6 },
+        { text: 'de wereld begint te pixelen als een videogame', minAge: 8 },
+        { text: 'je kunt niet meer stoppen met groeien', minAge: 6 },
+        // ── Communicatie ──
+        { text: 'het enige wapen is een woord', minAge: 10 },
+        { text: 'de enige manier om te communiceren is via muziek', minAge: 8 },
+        { text: 'niemand kan de held verstaan', minAge: 6 },
+        { text: 'alle geschreven tekst is onleesbaar geworden', minAge: 8 },
+        { text: 'je stem klinkt als iemand anders', minAge: 8 },
+        { text: 'brieven komen altijd bij de verkeerde persoon aan', minAge: 8 },
+        { text: 'je kunt alleen nog in rijm praten', minAge: 6 },
+        { text: 'alles wat je fluistert wordt geschreeuwd en andersom', minAge: 6 },
+        { text: 'het belangrijkste woord is vergeten', minAge: 8 },
+        { text: 'een boodschap moet bezorgd worden voor zonsondergang', minAge: 6 },
+        { text: 'je kunt opeens niet meer lezen', minAge: 6 },
+        { text: 'het enige boek met het antwoord is in een onbekende taal', minAge: 8 },
+        { text: 'een echo herhaalt steeds het verkeerde woord', minAge: 6 },
+        { text: 'het wachtwoord is een lied dat niemand meer kent', minAge: 8 },
+        { text: 'een brief bevat een waarschuwing maar de helft ontbreekt', minAge: 8 },
+        // ── Schaarste & dilemma ──
+        { text: 'er is maar één kans en die is nu', minAge: 8 },
+        { text: 'er is nog maar één lucifer over', minAge: 6 },
+        { text: 'de batterij heeft nog vijf procent', minAge: 8 },
+        { text: 'er is maar plaats voor één passagier', minAge: 8 },
+        { text: 'je mag maar drie voorwerpen meenemen', minAge: 6 },
+        { text: 'er is maar één wens en die moet gedeeld worden', minAge: 8 },
+        { text: 'er zijn twee paden en slechts één leidt naar huis', minAge: 6 },
+        { text: 'de koekjes zijn op', minAge: 6 },
+        { text: 'er is nog precies één uur brandstof', minAge: 8 },
+        { text: 'de zuurstof raakt langzaam op', minAge: 10 },
+        { text: 'er is maar één sleutel voor drie deuren', minAge: 6 },
+        { text: 'je kunt één ding redden — welk wordt het?', minAge: 8 },
+        { text: 'de uitgang sluit over vijf minuten', minAge: 8 },
+        { text: 'de redding is in zicht maar de weg ernaartoe is gevaarlijk', minAge: 8 },
+        { text: 'de machine werkt nog maar één keer', minAge: 8 },
+        { text: 'de brug houdt het nog maar twee minuten', minAge: 6 },
+        { text: 'de lamp brandt nog maar vijf minuten', minAge: 6 },
+        { text: 'het schild beschermt maar één kant', minAge: 8 },
+        { text: 'er is genoeg water voor drie dagen maar de reis duurt vijf', minAge: 10 },
+        { text: 'je hebt de kracht om één ding te veranderen — maar wat?', minAge: 10 },
+        // ── Abstract & filosofisch ──
+        { text: 'iemand beweert uit de toekomst te komen met een waarschuwing', minAge: 10 },
+        { text: 'het monster blijkt bang te zijn voor de held', minAge: 8 },
+        { text: 'het antwoord is te simpel om te geloven', minAge: 10 },
+        { text: 'de oplossing creëert een nieuw probleem', minAge: 10 },
+        { text: 'de enige getuige herinnert zich alles anders', minAge: 10 },
+        { text: 'iedereen gelooft een leugen behalve één persoon', minAge: 10 },
+        { text: 'een goed bedoelde actie maakt alles erger', minAge: 10 },
+        { text: 'het pad vooruit en het pad terug zijn hetzelfde', minAge: 10 },
+        { text: 'het antwoord lag de hele tijd al voor je neus', minAge: 8 },
+        { text: 'de redding is erger dan het gevaar', minAge: 10 },
+        { text: 'alles wat je dacht te weten blijkt anders te zijn', minAge: 10 },
+        { text: 'een oude voorspelling komt uit maar anders dan verwacht', minAge: 10 },
+        { text: 'het einde van het verhaal lijkt al geschreven te zijn', minAge: 10 },
+        { text: 'de vijand wil eigenlijk hetzelfde als de held', minAge: 10 },
+        { text: 'het probleem is dat er geen probleem lijkt te zijn', minAge: 10 },
+        { text: 'de regels die iedereen volgt blijken nergens op te slaan', minAge: 10 },
+        { text: 'de hele wereld wacht op wat de held gaat doen', minAge: 10 },
+        { text: 'een keuze uit het verleden achtervolgt je', minAge: 12 },
+        { text: 'de held ontdekt dat die zelf het probleem is', minAge: 12 },
+        { text: 'het verhaal van de vijand is hetzelfde als dat van de held', minAge: 12 },
+        // ── Extra problemen ──
+        { text: 'de uitgang is verdwenen', minAge: 6 },
+        { text: 'iedereen praat maar niemand luistert', minAge: 8 },
+        { text: 'het cadeau mag niet geopend worden', minAge: 6 },
+        { text: 'de zon komt niet meer op', minAge: 6 },
+        { text: 'het wachtwoord is vergeten', minAge: 6 },
+        { text: 'de kaart klopt niet meer met het landschap', minAge: 8 },
+        { text: 'het eten smaakt naar herinneringen', minAge: 10 },
+        { text: 'de schaduw doet niet meer wat jij doet', minAge: 8 },
+        { text: 'er is maar genoeg voor één persoon', minAge: 8 },
+        { text: 'de brug is halverwege afgebroken', minAge: 6 },
+        { text: 'je kunt alleen vooruit maar wilt terug', minAge: 8 },
+        { text: 'het monster wil eigenlijk knuffelen', minAge: 6 },
+        { text: 'de klok tikt achteruit', minAge: 6 },
+        { text: 'het licht dooft steeds sneller', minAge: 8 },
+        { text: 'de enige getuige is een papegaai', minAge: 6 },
+        { text: 'het geheim mag verteld worden maar niemand gelooft het', minAge: 8 },
+        { text: 'de held arriveert één dag te laat', minAge: 8 },
+        { text: 'alles wat je aanraakt wordt klein', minAge: 6 },
+        { text: 'er is een tweede versie van jezelf', minAge: 10 },
+        { text: 'de muziek stopt en iedereen verstijft', minAge: 6 },
+        { text: 'het schip zinkt maar de schat moet mee', minAge: 8 },
+        { text: 'je mag maar drie woorden zeggen', minAge: 6 },
+        { text: 'het ene wiel draait de andere kant op', minAge: 6 },
+        { text: 'het huis weigert je binnen te laten', minAge: 8 },
+        { text: 'de vijand stuurt precies hetzelfde plan', minAge: 10 },
+        { text: 'het boek schrijft zichzelf en het einde bevalt je niet', minAge: 10 },
+        { text: 'de wind blaast alle woorden weg', minAge: 6 },
+        { text: 'de brief is aangekomen maar bij de verkeerde persoon', minAge: 8 },
+        { text: 'je ontdekt dat je huisdier kan praten', minAge: 6 },
+        { text: 'de regen valt naar boven', minAge: 6 },
+        { text: 'iemand heeft het einde van het verhaal gestolen', minAge: 8 },
+        { text: 'de spiegel laat een andere versie van de waarheid zien', minAge: 10 },
+        { text: 'je bent de enige die het gevaar ziet', minAge: 8 },
+        { text: 'het cadeau dat je gaf komt steeds terug', minAge: 8 },
+        { text: 'de weg terug bestaat niet meer', minAge: 8 },
+        { text: 'het wapen van de held werkt alleen tegen vrienden', minAge: 10 },
+        { text: 'de nacht duurt al drie dagen', minAge: 8 },
+        { text: 'iedereen herinnert zich iets wat nooit is gebeurd', minAge: 10 },
+        { text: 'het kompas wijst naar een plek die niet op de kaart staat', minAge: 8 },
+        { text: 'de muren komen langzaam dichterbij', minAge: 8 },
+        { text: 'je kunt alleen vliegen als niemand kijkt', minAge: 6 },
+        { text: 'de sleutel past maar de deur wil niet open', minAge: 6 },
+        { text: 'het water stijgt en er is geen boot', minAge: 8 },
+        { text: 'het plan werkt alleen als iedereen meedoet', minAge: 8 },
+        { text: 'de stem in je hoofd geeft verkeerde adviezen', minAge: 10 },
+        { text: 'de enige manier om te winnen is opgeven', minAge: 10 },
+        { text: 'de trein vertrekt over vijf minuten maar het station is een uur lopen', minAge: 8 },
+        { text: 'het touw is net iets te kort', minAge: 6 },
+        { text: 'de vloer is van glas en eronder is diepte', minAge: 8 },
+        { text: 'het geschenk verandert elke keer dat je het opent', minAge: 8 },
+        { text: 'je moet kiezen tussen twee vrienden', minAge: 8 },
+        { text: 'het geheim houdt je gevangen maar de waarheid is erger', minAge: 12 }
+    ];
+
+    const allLists = [personages, plekken, problemen];
+
+    // ── DOM ──────────────────────────────────────────────────────────
+
+    const reelEls = [
+        document.querySelector('#reel-0 .reel-value'),
+        document.querySelector('#reel-1 .reel-value'),
+        document.querySelector('#reel-2 .reel-value')
+    ];
+    const reelContainers = [
+        document.getElementById('reel-0'),
+        document.getElementById('reel-1'),
+        document.getElementById('reel-2')
+    ];
+    const lockButtons = document.querySelectorAll('.lock-btn');
+    const spinBtn = document.getElementById('spin-btn');
+    const hintBtn = document.getElementById('hint-btn');
+    const hintOutput = document.getElementById('hint-output');
+    const hintText = document.getElementById('hint-text');
+    const ageInput = document.getElementById('age-input');
+    const ageHint = document.getElementById('age-hint');
+    const itemCount = document.getElementById('item-count');
+
+    // ── STATE ────────────────────────────────────────────────────────
+
+    const locked = [false, false, false];
+    const currentItems = [null, null, null];
+    let isSpinning = false;
+    let hasSpun = false;
+
+    // ── HELPERS ──────────────────────────────────────────────────────
+
+    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function pickExcluding(arr, excludeText) {
+        const f = arr.filter(w => w.text !== excludeText);
+        return f.length > 0 ? pick(f) : pick(arr);
+    }
+    function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+    function getAge() {
+        const v = parseInt(ageInput.value);
+        return (v >= 5 && v <= 99) ? v : null;
+    }
+    function getTier(age) {
+        if (!age) return 'middle';
+        if (age <= 9) return 'young';
+        if (age <= 13) return 'middle';
+        return 'older';
+    }
+    function filterByAge(list, age) {
+        if (!age) return list;
+        return list.filter(item => item.minAge <= age);
+    }
+    function getFilteredLists() {
+        const age = getAge();
+        return allLists.map(list => filterByAge(list, age));
+    }
+    function updateItemCount() {
+        const filtered = getFilteredLists();
+        const counts = filtered.map(l => l.length);
+        itemCount.textContent = `${counts[0]} personages · ${counts[1]} plekken · ${counts[2]} problemen`;
+    }
+
+    // ── AGE ─────────────────────────────────────────────────────────
+
+    function updateAgeHint() {
+        const age = getAge();
+        if (!age) {
+            ageHint.textContent = 'Vul je leeftijd in voor verhalen op maat';
+            ageHint.classList.remove('active');
+        } else {
+            const msgs = { young: 'Super! De VerhaalMachine kiest verhalen speciaal voor jou!', middle: 'Top! Klaar voor spannende verhalen!', older: 'Welkom, schrijver! De machine staat klaar.' };
+            ageHint.textContent = msgs[getTier(age)];
+            ageHint.classList.add('active');
+        }
+        updateItemCount();
+    }
+    ageInput.addEventListener('input', updateAgeHint);
+    updateAgeHint();
+
+    // ── LOCKS ────────────────────────────────────────────────────────
+
+    lockButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (isSpinning || !hasSpun) return;
+            const idx = parseInt(btn.dataset.reel);
+            locked[idx] = !locked[idx];
+            btn.classList.toggle('active', locked[idx]);
+            btn.querySelector('.lock-icon').textContent = locked[idx] ? '\u{1F512}' : '\u{1F513}';
+            btn.querySelector('.lock-text').textContent = locked[idx] ? 'Vastzit' : 'Vastzetten';
+            reelContainers[idx].classList.toggle('locked', locked[idx]);
+        });
+    });
+
+    // ── SPIN ─────────────────────────────────────────────────────────
+
+    function spinReel(index, filteredList) {
+        return new Promise(resolve => {
+            const el = reelEls[index];
+            const container = reelContainers[index];
+            const currentText = currentItems[index] ? currentItems[index].text : null;
+            const target = pickExcluding(filteredList, currentText);
+            container.classList.add('spinning');
+            el.classList.remove('initial', 'landed');
+            let interval = 55, elapsed = 0;
+            const duration = 1600 + index * 450;
+            function tick() {
+                el.textContent = cap(pick(filteredList).text);
+                elapsed += interval;
+                if (elapsed >= duration) {
+                    el.textContent = cap(target.text);
+                    container.classList.remove('spinning');
+                    el.classList.add('landed');
+                    currentItems[index] = target;
+                    resolve();
+                    return;
+                }
+                const progress = elapsed / duration;
+                interval = 55 + (progress * progress * progress) * 350;
+                setTimeout(tick, interval);
+            }
+            setTimeout(tick, 50);
+        });
+    }
+
+    async function spin() {
+        if (isSpinning) return;
+        if (locked.every(Boolean) && hasSpun) return;
+        isSpinning = true;
+        spinBtn.disabled = true;
+        hintBtn.classList.remove('visible');
+        hintOutput.classList.remove('visible');
+        lockButtons.forEach(btn => { btn.disabled = true; });
+        const filtered = getFilteredLists();
+        const promises = [];
+        for (let i = 0; i < 3; i++) {
+            if (!locked[i]) promises.push(spinReel(i, filtered[i]));
+        }
+        await Promise.all(promises);
+        isSpinning = false;
+        hasSpun = true;
+        spinBtn.disabled = false;
+        lockButtons.forEach(btn => { btn.disabled = false; });
+        hintBtn.classList.add('visible');
+    }
+    spinBtn.addEventListener('click', spin);
+
+    // ── HULPVRAGEN — 50 items ───────────────────────────────────────
+
+    const hulpvragen = [
+        'Hoe zou dit personage eigenlijk op deze plek terecht zijn gekomen?',
+        'Hoe zou dit probleem eigenlijk zijn veroorzaakt?',
+        'Wat is het eerste dat dit personage ziet als het om zich heen kijkt?',
+        'Welk geluid hoort dit personage op deze plek?',
+        'Wat heeft dit personage in zijn of haar zakken?',
+        'Wie zou dit personage het liefst om hulp vragen — en waarom juist die persoon?',
+        'Wat is de grootste angst van dit personage?',
+        'Wat ruikt dit personage op deze plek?',
+        'Welk weer past bij dit verhaal — en hoe beïnvloedt dat de stemming?',
+        'Wat deed dit personage vijf minuten voordat het verhaal begint?',
+        'Hoe zou een omstander deze situatie beschrijven?',
+        'Wat is het grappigste dat er mis kan gaan?',
+        'Wat zou dit personage tegen zichzelf zeggen in de spiegel?',
+        'Welk dier zou dit personage tegenkomen — en wat betekent die ontmoeting?',
+        'Wat is het eerste plan van dit personage, en waarom werkt het niet?',
+        'Hoe zou het verhaal anders lopen als het personage tien jaar jonger was?',
+        'Wat zou dit personage absoluut niet willen dat iemand anders ontdekt?',
+        'Welk voorwerp op deze plek speelt een belangrijke rol?',
+        'Hoe verandert deze plek als het nacht wordt?',
+        'Wie is de laatste persoon die dit personage heeft gesproken?',
+        'Wat was het plan van dit personage vóórdat alles misging?',
+        'Welke herinnering komt boven bij dit personage op deze plek?',
+        'Hoe zou een kind van zes dit probleem proberen op te lossen?',
+        'Wat staat er op het briefje dat iemand heeft achtergelaten?',
+        'Wat is het ergste dat kan gebeuren als het probleem niet wordt opgelost?',
+        'Welke eigenschap van dit personage is nu juist een nadeel?',
+        'Hoe zou het verhaal beginnen als je het vanuit het probleem vertelt?',
+        'Wat is er zo bijzonder aan deze plek dat niemand het meteen opvalt?',
+        'Welk misverstand maakt alles nog ingewikkelder?',
+        'Wat zou dit personage doen als het precies één telefoontje mocht plegen?',
+        'Hoe zou dit personage een klein kind uitleggen wat er aan de hand is?',
+        'Welke geur hangt er op deze plek, en welke herinnering roept die op?',
+        'Wie heeft het probleem als laatste gezien voordat het uit de hand liep?',
+        'Wat zou dit personage opofferen om het probleem op te lossen?',
+        'Hoe zou het verhaal aflopen als het personage precies het tegenovergestelde deed?',
+        'Welke leugen houdt iemand in dit verhaal in stand?',
+        'Wat maakt dit personage anders dan iedereen die hier eerder was?',
+        'Hoe zou het verhaal klinken als het personage het later aan een vriend vertelt?',
+        'Welk detail op deze plek geeft een aanwijzing voor de oplossing?',
+        'Wat is de allereerste zin van dit verhaal?',
+        'Wie profiteert ervan als het probleem niet wordt opgelost?',
+        'Welk talent heeft dit personage dat niemand verwacht?',
+        'Wat verandert er op deze plek als het probleem is opgelost?',
+        'Hoe zou een vogel die overvliegt deze scène beschrijven?',
+        'Wat is de moeilijkste keuze die dit personage moet maken?',
+        'Welk gevoel overheerst bij dit personage: angst, nieuwsgierigheid of vastberadenheid?',
+        'Wat zou er gebeuren als er nóg iemand op deze plek verschijnt?',
+        'Hoe zou het verhaal zijn als de plek en het probleem werden omgedraaid?',
+        'Wat is het moment waarop alles kantelt in dit verhaal?',
+        'Welke les leert dit personage aan het eind — en had het die eerder kunnen leren?'
+    ];
+
+    let lastHintIndex = -1;
+
+    function pickHint() {
+        let idx;
+        do { idx = Math.floor(Math.random() * hulpvragen.length); } while (idx === lastHintIndex);
+        lastHintIndex = idx;
+        return hulpvragen[idx];
+    }
+
+    // ── HULPVRAAG BUTTON ─────────────────────────────────────────────
+
+    hintBtn.addEventListener('click', () => {
+        if (!hasSpun || isSpinning) return;
+        hintText.textContent = pickHint();
+        hintOutput.classList.remove('visible');
+        void hintOutput.offsetWidth;
+        hintOutput.classList.add('visible');
+        hintOutput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+
+    // ── KEYBOARD ─────────────────────────────────────────────────────
+
+    document.addEventListener('keydown', e => {
+        if (e.code === 'Space' && !e.target.closest('button') && !e.target.closest('input') && !isSpinning) {
+            e.preventDefault();
+            spin();
+        }
+    });
+
+})();
+</script>
+</body>
+</html>
